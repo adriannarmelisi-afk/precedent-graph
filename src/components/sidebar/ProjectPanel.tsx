@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useStore } from "../../store/appStore";
 import { updateProject } from "../../store/actions";
-import { normaliseTags } from "../../utils/tagUtils";
+import { normaliseTags, suggestTagsFromText } from "../../utils/tagUtils";
 import { TagInput } from "./TagInput";
 
 export function ProjectPanel({ onAnalyse }: { onAnalyse?: () => void }) {
@@ -10,6 +10,23 @@ export function ProjectPanel({ onAnalyse }: { onAnalyse?: () => void }) {
 
   const isEmpty = !project.title && !project.summary && project.tags.length === 0;
   const [editing, setEditing] = useState(isEmpty);
+  const [suggested, setSuggested] = useState<string[] | null>(null);
+
+  const runSuggest = () => {
+    const hits = suggestTagsFromText(project.summary).filter((t) => !project.tags.includes(t));
+    setSuggested(hits);
+  };
+
+  const acceptTag = (tag: string) => {
+    dispatch(updateProject({ tags: normaliseTags([...project.tags, tag]) }));
+    setSuggested((prev) => (prev ? prev.filter((t) => t !== tag) : prev));
+  };
+
+  const acceptAll = () => {
+    if (!suggested) return;
+    dispatch(updateProject({ tags: normaliseTags([...project.tags, ...suggested]) }));
+    setSuggested([]);
+  };
 
   return (
     <section className="rounded-lg border-2 border-primary bg-surface-1 p-5">
@@ -64,12 +81,66 @@ export function ProjectPanel({ onAnalyse }: { onAnalyse?: () => void }) {
           </div>
 
           <div>
-            <label className="mb-2 block text-[10px] font-medium uppercase tracking-wide text-ink-tertiary">
-              Concept tags
-              <span className="ml-1.5 font-normal normal-case text-ink-tertiary">
-                — these link your project to precedents
-              </span>
-            </label>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="block text-[10px] font-medium uppercase tracking-wide text-ink-tertiary">
+                Concept tags
+                <span className="ml-1.5 font-normal normal-case text-ink-tertiary">
+                  — these link your project to precedents
+                </span>
+              </label>
+              <button
+                type="button"
+                onClick={runSuggest}
+                disabled={!project.summary.trim()}
+                title={
+                  project.summary.trim()
+                    ? "Scan your concept summary for matching concept words"
+                    : "Write a concept summary first"
+                }
+                className="shrink-0 rounded-md border border-hairline-strong px-2.5 py-1 text-[10px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary disabled:opacity-40"
+              >
+                ✦ Suggest from concept
+              </button>
+            </div>
+
+            {suggested !== null && (
+              <div className="mb-3 rounded-md border border-hairline bg-surface-2 p-2.5">
+                {suggested.length === 0 ? (
+                  <p className="text-[11px] text-ink-tertiary">
+                    No new concept words found in your summary — try adding more detail, or pick tags
+                    below.
+                  </p>
+                ) : (
+                  <>
+                    <div className="mb-1.5 flex items-center justify-between">
+                      <span className="text-[10px] font-medium uppercase tracking-wide text-ink-tertiary">
+                        Found in your summary — tap to add
+                      </span>
+                      <button
+                        type="button"
+                        onClick={acceptAll}
+                        className="text-[10px] font-medium text-primary hover:underline"
+                      >
+                        add all
+                      </button>
+                    </div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {suggested.map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => acceptTag(tag)}
+                          className="rounded-full border border-primary bg-primary-soft px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary hover:text-on-primary"
+                        >
+                          + {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             <TagInput
               selected={project.tags}
               onChange={(tags) => dispatch(updateProject({ tags: normaliseTags(tags) }))}
