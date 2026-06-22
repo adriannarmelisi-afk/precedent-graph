@@ -1,9 +1,10 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Graph } from "./components/graph/Graph";
 import { PrecedentCard } from "./components/precedent/PrecedentCard";
 import { PrecedentForm } from "./components/precedent/PrecedentForm";
 import { ProjectPanel } from "./components/sidebar/ProjectPanel";
 import { AnalysePanel } from "./components/analyse/AnalysePanel";
+import { StyleKitExport } from "./components/export/StyleKitExport";
 import { TagFilterPanel } from "./components/tags/TagFilterPanel";
 import { SwatchChip } from "./components/palette/SwatchChip";
 import {
@@ -41,6 +42,23 @@ function AppShell() {
   const [analyseSource, setAnalyseSource] = useState<"claude" | "local">("local");
   const [analysing, setAnalysing] = useState(false);
   const [form, setForm] = useState<{ mode: "add" | "edit"; id?: string } | null>(null);
+  const [exporting, setExporting] = useState(false);
+  const sheetRef = useRef<HTMLDivElement>(null);
+
+  const handleExport = async () => {
+    if (!sheetRef.current) return;
+    setExporting(true);
+    try {
+      const { default: html2canvas } = await import("html2canvas");
+      const canvas = await html2canvas(sheetRef.current, { backgroundColor: "#f4f3f0", scale: 2 });
+      const link = document.createElement("a");
+      link.download = `${(project.title || "precedent-graph").replace(/\s+/g, "-").toLowerCase()}-style-kit.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const handleAnalyse = async () => {
     setAnalysing(true);
@@ -75,9 +93,11 @@ function AppShell() {
           </button>
           <button
             type="button"
-            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-on-primary transition-colors hover:bg-primary-hover"
+            onClick={handleExport}
+            disabled={exporting}
+            className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
           >
-            Export style kit
+            {exporting ? "Exporting…" : "Export style kit"}
           </button>
         </div>
       </header>
@@ -232,6 +252,10 @@ function AppShell() {
           onClose={() => setForm(null)}
         />
       )}
+
+      <div style={{ position: "absolute", left: -10000, top: 0, pointerEvents: "none" }} aria-hidden>
+        <StyleKitExport ref={sheetRef} project={project} palette={palette} />
+      </div>
     </div>
   );
 }
