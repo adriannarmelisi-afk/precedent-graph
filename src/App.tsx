@@ -1,10 +1,13 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { Graph } from "./components/graph/Graph";
 import { PrecedentCard } from "./components/precedent/PrecedentCard";
+import { ProjectPanel } from "./components/sidebar/ProjectPanel";
+import { AnalysePanel } from "./components/analyse/AnalysePanel";
 import { TagFilterPanel } from "./components/tags/TagFilterPanel";
 import { SwatchChip } from "./components/palette/SwatchChip";
 import {
   saveNodePosition,
+  setAnalyseResult,
   setSelected,
   setTagFilters,
   toggleInfluence,
@@ -14,6 +17,7 @@ import { StoreProvider, useStore } from "./store/appStore";
 import { useGraph } from "./hooks/useGraph";
 import { usePalette } from "./hooks/usePalette";
 import { allTagsInUse } from "./utils/tagUtils";
+import { analyseInfluences } from "./utils/analyseInfluences";
 
 function AppShell() {
   const { state, dispatch } = useStore();
@@ -31,6 +35,20 @@ function AppShell() {
 
   const selected = precedents.find((p) => p.id === ui.selected) ?? null;
   const influenceCount = precedents.filter((p) => p.isInfluence).length;
+
+  const [analyseSource, setAnalyseSource] = useState<"claude" | "local">("local");
+  const [analysing, setAnalysing] = useState(false);
+
+  const handleAnalyse = async () => {
+    setAnalysing(true);
+    try {
+      const { result, source } = await analyseInfluences(project, precedents);
+      dispatch(setAnalyseResult(result));
+      setAnalyseSource(source);
+    } finally {
+      setAnalysing(false);
+    }
+  };
 
   return (
     <div className="flex h-screen w-screen flex-col bg-canvas text-ink">
@@ -63,7 +81,9 @@ function AppShell() {
 
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 overflow-y-auto p-6">
-          <section>
+          <ProjectPanel onAnalyse={handleAnalyse} />
+
+          <section className="mt-8">
             <h2 className="mb-3 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
               Precedents
             </h2>
@@ -111,6 +131,14 @@ function AppShell() {
             onToggle={(tag) => dispatch(toggleTagFilter(tag))}
             onClear={() => dispatch(setTagFilters([]))}
           />
+
+          {analysing && (
+            <p className="text-[12px] text-ink-tertiary">Analysing your concept…</p>
+          )}
+
+          {ui.analyseResult && !analysing && (
+            <AnalysePanel result={ui.analyseResult} source={analyseSource} />
+          )}
 
           {selected && (
             <div className="rounded-lg border border-hairline bg-surface-1 p-4">
