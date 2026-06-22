@@ -51,10 +51,22 @@ function AppShell() {
     try {
       const { default: html2canvas } = await import("html2canvas");
       const canvas = await html2canvas(sheetRef.current, { backgroundColor: "#f4f3f0", scale: 2 });
+      const fileName = `${(project.title || "precedent-graph").replace(/\s+/g, "-").toLowerCase()}-style-kit.png`;
+
+      const blob = await new Promise<Blob | null>((resolve) =>
+        canvas.toBlob(resolve, "image/png"),
+      );
+      if (!blob) return;
+
+      const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
-      link.download = `${(project.title || "precedent-graph").replace(/\s+/g, "-").toLowerCase()}-style-kit.png`;
-      link.href = canvas.toDataURL("image/png");
+      link.href = url;
+      link.download = fileName;
+      // Anchor must be in the DOM for the click to trigger a download in all browsers.
+      document.body.appendChild(link);
       link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
     } finally {
       setExporting(false);
     }
