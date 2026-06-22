@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Graph } from "./components/graph/Graph";
 import { PrecedentCard } from "./components/precedent/PrecedentCard";
 import { PrecedentForm } from "./components/precedent/PrecedentForm";
@@ -44,6 +44,18 @@ function AppShell() {
   const [form, setForm] = useState<{ mode: "add" | "edit"; id?: string } | null>(null);
   const [exporting, setExporting] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const projectRef = useRef<HTMLDivElement>(null);
+  const [projectFlash, setProjectFlash] = useState(false);
+
+  // Clicking the project node in the graph focuses the project: scroll to the
+  // panel and briefly highlight it (the sidebar also shows the project view).
+  useEffect(() => {
+    if (ui.selected !== "project") return;
+    projectRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+    setProjectFlash(true);
+    const t = setTimeout(() => setProjectFlash(false), 1300);
+    return () => clearTimeout(t);
+  }, [ui.selected]);
 
   const handleExport = async () => {
     if (!sheetRef.current) return;
@@ -116,7 +128,14 @@ function AppShell() {
 
       <div className="flex flex-1 overflow-hidden">
         <main className="flex-1 overflow-y-auto p-6">
-          <ProjectPanel onAnalyse={handleAnalyse} />
+          <div
+            ref={projectRef}
+            className={`rounded-lg transition-shadow duration-500 ${
+              projectFlash ? "ring-2 ring-primary ring-offset-2 ring-offset-canvas" : ""
+            }`}
+          >
+            <ProjectPanel onAnalyse={handleAnalyse} />
+          </div>
 
           <section className="mt-8">
             <div className="mb-3 flex items-center justify-between">
@@ -184,6 +203,62 @@ function AppShell() {
             <AnalysePanel result={ui.analyseResult} source={analyseSource} />
           )}
 
+          {ui.selected === "project" && (
+            <div className="rounded-lg border-2 border-primary bg-surface-1 p-4">
+              <div className="flex items-center gap-2">
+                <span className="text-primary" aria-hidden="true">
+                  ◆
+                </span>
+                <h3 className="text-sm font-medium text-ink">{project.title || "Your project"}</h3>
+              </div>
+              {project.summary && (
+                <p className="mt-2 text-[13px] leading-relaxed text-ink-muted">{project.summary}</p>
+              )}
+              {project.tags.length > 0 && (
+                <div className="mt-3 flex flex-wrap gap-1">
+                  {project.tags.map((tag) => (
+                    <span
+                      key={tag}
+                      className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-medium text-primary"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
+
+              <div className="mt-4 border-t border-hairline pt-3">
+                <h4 className="mb-2 text-[10px] font-medium uppercase tracking-wide text-ink-tertiary">
+                  Combined palette
+                  <span className="ml-1.5 font-normal normal-case">
+                    {palette.length} colours, all influences
+                  </span>
+                </h4>
+                {palette.length === 0 ? (
+                  <p className="text-[12px] leading-relaxed text-ink-tertiary">
+                    No influences yet — mark precedents as influences to build your project's palette.
+                  </p>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    {palette.map((entry) => (
+                      <SwatchChip key={entry.hex} entry={entry} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={() =>
+                  projectRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+                }
+                className="mt-4 rounded-md border border-hairline-strong px-3 py-1 text-[11px] text-ink-subtle transition-colors hover:border-primary hover:text-primary"
+              >
+                Edit project ↑
+              </button>
+            </div>
+          )}
+
           {selected && (
             <div className="rounded-lg border border-hairline bg-surface-1 p-4">
               <h3 className="text-sm font-medium text-ink">{selected.name}</h3>
@@ -236,7 +311,7 @@ function AppShell() {
             </div>
           )}
 
-          <div>
+          <div className={ui.selected === "project" ? "hidden" : ""}>
             <h3 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
               Live palette
               <span className="ml-2 font-normal normal-case">{palette.length} colours</span>
