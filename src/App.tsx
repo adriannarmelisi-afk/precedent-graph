@@ -1,11 +1,13 @@
 import { useMemo, useState } from "react";
 import { Graph } from "./components/graph/Graph";
 import { PrecedentCard } from "./components/precedent/PrecedentCard";
+import { PrecedentForm } from "./components/precedent/PrecedentForm";
 import { ProjectPanel } from "./components/sidebar/ProjectPanel";
 import { AnalysePanel } from "./components/analyse/AnalysePanel";
 import { TagFilterPanel } from "./components/tags/TagFilterPanel";
 import { SwatchChip } from "./components/palette/SwatchChip";
 import {
+  deletePrecedent,
   saveNodePosition,
   setAnalyseResult,
   setSelected,
@@ -38,6 +40,7 @@ function AppShell() {
 
   const [analyseSource, setAnalyseSource] = useState<"claude" | "local">("local");
   const [analysing, setAnalysing] = useState(false);
+  const [form, setForm] = useState<{ mode: "add" | "edit"; id?: string } | null>(null);
 
   const handleAnalyse = async () => {
     setAnalysing(true);
@@ -84,9 +87,18 @@ function AppShell() {
           <ProjectPanel onAnalyse={handleAnalyse} />
 
           <section className="mt-8">
-            <h2 className="mb-3 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
-              Precedents
-            </h2>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
+                Precedents
+              </h2>
+              <button
+                type="button"
+                onClick={() => setForm({ mode: "add" })}
+                className="rounded-md border border-hairline-strong px-2.5 py-1 text-[11px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary"
+              >
+                + Add precedent
+              </button>
+            </div>
             <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
               {visiblePrecedents.map((p) => {
                 const shared = p.tags.filter((t) => projectTags.has(t)).length;
@@ -171,6 +183,24 @@ function AppShell() {
                   </span>
                 ))}
               </div>
+              <div className="mt-4 flex gap-2 border-t border-hairline pt-3">
+                <button
+                  type="button"
+                  onClick={() => setForm({ mode: "edit", id: selected.id })}
+                  className="rounded-md border border-hairline-strong px-3 py-1 text-[11px] text-ink-subtle transition-colors hover:border-primary hover:text-primary"
+                >
+                  Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (confirm(`Delete "${selected.name}"?`)) dispatch(deletePrecedent(selected.id));
+                  }}
+                  className="rounded-md border border-hairline-strong px-3 py-1 text-[11px] text-ink-tertiary transition-colors hover:border-primary hover:text-primary"
+                >
+                  Delete
+                </button>
+              </div>
             </div>
           )}
 
@@ -194,6 +224,14 @@ function AppShell() {
           </div>
         </aside>
       </div>
+
+      {form && (
+        <PrecedentForm
+          mode={form.mode}
+          precedent={form.id ? precedents.find((p) => p.id === form.id) : undefined}
+          onClose={() => setForm(null)}
+        />
+      )}
     </div>
   );
 }
