@@ -1,0 +1,118 @@
+import type { Precedent } from "../types";
+
+// Placeholder seed set — swap for student-authored entries via the Wikipedia + canvas
+// extraction workflow once real precedent URLs are provided.
+export const SEED_PRECEDENTS: Precedent[] = [
+  {
+    id: "salk-institute",
+    name: "Salk Institute for Biological Studies",
+    architect: "Louis Kahn",
+    year: 1965,
+    demonstrates: "Concrete as thermal mass — the travertine plaza holds heat and silence between two labs.",
+    tags: ["concrete", "threshold", "institutional", "stillness", "void"],
+    swatches: [
+      { hex: "#C4B49A", label: "Travertine", sourceId: "salk-institute" },
+      { hex: "#8C8C86", label: "Board-form concrete", sourceId: "salk-institute" },
+    ],
+    isInfluence: false,
+    imageUrl: "",
+  },
+  {
+    id: "therme-vals",
+    name: "Therme Vals",
+    architect: "Peter Zumthor",
+    year: 1996,
+    demonstrates: "Stone as mass and ritual — compression and procession through dark thresholds into light pools.",
+    tags: ["stone", "threshold", "compression", "procession", "stillness", "topography"],
+    swatches: [
+      { hex: "#6B6B63", label: "Valser quartzite", sourceId: "therme-vals" },
+      { hex: "#3A3A38", label: "Wet stone shadow", sourceId: "therme-vals" },
+    ],
+    isInfluence: false,
+    imageUrl: "",
+  },
+  {
+    id: "tadao-ando-church-of-light",
+    name: "Church of the Light",
+    architect: "Tadao Ando",
+    year: 1989,
+    demonstrates: "Raw concrete as void — a single cruciform cut lets light become the only ornament.",
+    tags: ["concrete", "light", "void", "sacred", "austerity", "rawness"],
+    swatches: [
+      { hex: "#9C9C97", label: "Raw concrete", sourceId: "tadao-ando-church-of-light" },
+      { hex: "#1A1A1A", label: "Interior shadow", sourceId: "tadao-ando-church-of-light" },
+    ],
+    isInfluence: false,
+    imageUrl: "",
+  },
+  {
+    id: "neues-museum",
+    name: "Neues Museum",
+    architect: "David Chipperfield",
+    year: 2009,
+    demonstrates: "Adaptive reuse as dialogue — new brick fabric sits beside bomb-scarred fragments without disguise.",
+    tags: ["brick", "adaptive-reuse", "fragment", "dialogue", "institutional"],
+    swatches: [
+      { hex: "#B7A98C", label: "Reconstituted marble aggregate", sourceId: "neues-museum" },
+      { hex: "#D9D3C4", label: "Original stone fragment", sourceId: "neues-museum" },
+    ],
+    isInfluence: false,
+    imageUrl: "",
+  },
+  {
+    id: "barcelona-pavilion",
+    name: "Barcelona Pavilion",
+    architect: "Mies van der Rohe",
+    year: 1929,
+    demonstrates: "Free plan as transparency — glass and travertine planes float independent of structure.",
+    tags: ["glass", "stone", "transparency", "datum", "civic"],
+    swatches: [
+      { hex: "#D7C9A8", label: "Golden onyx", sourceId: "barcelona-pavilion" },
+      { hex: "#A9B4B4", label: "Tinted glass", sourceId: "barcelona-pavilion" },
+    ],
+    isInfluence: false,
+    imageUrl: "",
+  },
+  {
+    id: "sea-ranch-condominium",
+    name: "Sea Ranch Condominium",
+    architect: "MLTW",
+    year: 1965,
+    demonstrates: "Timber as topography — weathered shingle volumes echo the coastal bluff they sit on.",
+    tags: ["timber", "topography", "earth", "domestic", "rawness"],
+    swatches: [
+      { hex: "#8A7866", label: "Weathered redwood", sourceId: "sea-ranch-condominium" },
+      { hex: "#5C5650", label: "Shadowed shingle", sourceId: "sea-ranch-condominium" },
+    ],
+    isInfluence: false,
+    imageUrl: "",
+  },
+  {
+    id: "21st-century-museum-kanazawa",
+    name: "21st Century Museum of Contemporary Art",
+    architect: "SANAA",
+    year: 2004,
+    demonstrates: "Glass as boundary dissolved — a circular plan with no front or back, public ground flows through.",
+    tags: ["glass", "transparency", "public-ground", "lightness", "cultural"],
+    swatches: [
+      { hex: "#E8E8E4", label: "White terrazzo floor", sourceId: "21st-century-museum-kanazawa" },
+      { hex: "#C9D6D6", label: "Glass reflection", sourceId: "21st-century-museum-kanazawa" },
+    ],
+    isInfluence: false,
+    imageUrl: "",
+  },
+  {
+    id: "castelvecchio-museum",
+    name: "Castelvecchio Museum",
+    architect: "Carlo Scarpa",
+    year: 1964,
+    demonstrates: "Layered fragments as palimpsest — every era of the castle's fabric is left legible, never erased.",
+    tags: ["stone", "fragment", "palimpsest", "ruin", "refinement", "timber", "earth"],
+    swatches: [
+      { hex: "#7D7468", label: "Aged stucco", sourceId: "castelvecchio-museum" },
+      { hex: "#3F3D38", label: "Cast iron detail", sourceId: "castelvecchio-museum" },
+    ],
+    isInfluence: false,
+    imageUrl: "",
+  },
+];
