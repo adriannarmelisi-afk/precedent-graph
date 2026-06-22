@@ -123,7 +123,7 @@ export function Graph({
   }, [activeTagFilters]);
 
   return (
-    <svg ref={svgRef} className="h-full w-full" style={{ background: "var(--color-canvas)" }}>
+    <svg ref={svgRef} className="h-full w-full" style={{ background: "transparent" }}>
       <style>{`
         .node-pulse {
           animation: node-pulse 1.6s ease-in-out infinite;

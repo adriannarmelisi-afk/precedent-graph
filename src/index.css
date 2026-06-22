@@ -1,26 +1,31 @@
 @import "tailwindcss";
 
+/*
+ * Light editorial palette — greyscale "paper" surfaces with a single red accent.
+ * Adapted from DESIGN.md's surface-ladder + hairline rigour, recoloured from
+ * lavender to red and inverted to a light base.
+ */
 @theme {
-  --color-canvas: #010102;
-  --color-surface-1: #0f1011;
-  --color-surface-2: #141516;
-  --color-surface-3: #18191a;
-  --color-surface-4: #191a1b;
+  --color-canvas: #f4f3f0;
+  --color-surface-1: #ffffff;
+  --color-surface-2: #faf9f6;
+  --color-surface-3: #efeee9;
+  --color-surface-4: #e7e5e0;
 
-  --color-hairline: #23252a;
-  --color-hairline-strong: #34343a;
-  --color-hairline-tertiary: #3e3e44;
+  --color-hairline: #e4e3df;
+  --color-hairline-strong: #d3d1c7;
+  --color-hairline-tertiary: #b4b2a9;
 
-  --color-ink: #f7f8f8;
-  --color-ink-muted: #d0d6e0;
-  --color-ink-subtle: #8a8f98;
-  --color-ink-tertiary: #62666d;
+  --color-ink: #1a1a1a;
+  --color-ink-muted: #4a4a47;
+  --color-ink-subtle: #6b6b6b;
+  --color-ink-tertiary: #9a9a96;
 
-  --color-primary: #5e6ad2;
-  --color-primary-hover: #828fff;
-  --color-primary-focus: #5e69d1;
+  --color-primary: #c0322e;
+  --color-primary-hover: #a62a26;
+  --color-primary-focus: #c0322e;
+  --color-primary-soft: #fcecec;
   --color-on-primary: #ffffff;
-  --color-brand-secure: #7a7fad;
 
   --color-success: #27a644;
 
@@ -30,7 +35,7 @@
 }
 
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 }
 
 * {

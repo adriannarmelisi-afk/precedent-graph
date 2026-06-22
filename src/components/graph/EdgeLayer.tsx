@@ -12,7 +12,7 @@ export function renderEdges(g: d3.Selection<SVGGElement, unknown, null, undefine
     .selectAll<SVGLineElement, SimEdge>("line")
     .data(edges, (d) => `${(d.source as GraphNode).id ?? d.source}-${(d.target as GraphNode).id ?? d.target}`)
     .join("line")
-    .attr("stroke", "var(--color-hairline-strong)")
+    .attr("stroke", "var(--color-hairline-tertiary)")
     .attr("stroke-width", (d) => edgeStrokeWidth(d.weight))
-    .attr("stroke-opacity", 0.6);
+    .attr("stroke-opacity", 0.7);
 }

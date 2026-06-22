@@ -35,7 +35,7 @@ export function renderNodes(
       ? "var(--color-primary-hover)"
       : d.isInfluence
         ? "var(--color-primary)"
-        : "var(--color-surface-3)";
+        : "var(--color-hairline-strong)";
 
     let path = group.select<SVGPathElement>("path");
     if (isProject) {
@@ -46,7 +46,7 @@ export function renderNodes(
     }
     path
       .attr("fill", fill)
-      .attr("stroke", isProject ? "var(--color-primary-focus)" : "var(--color-hairline-strong)")
+      .attr("stroke", isProject ? "var(--color-primary-focus)" : "var(--color-ink-tertiary)")
       .attr("stroke-width", isProject ? 2 : 1)
       .classed("node-pulse", d.isRecommended);
 
@@ -62,7 +62,7 @@ export function renderNodes(
       .text(d.label)
       .attr("y", RADIUS + 16)
       .attr("text-anchor", "middle")
-      .attr("fill", "var(--color-ink-muted)")
+      .attr("fill", "var(--color-ink-subtle)")
       .attr("font-size", 11)
       .attr("font-family", "var(--font-text)")
       .style("pointer-events", "none");
