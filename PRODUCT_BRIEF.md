@@ -1,49 +1,46 @@
 # Product Brief: Precedent Graph — Architecture Studio Research Tool
 
-**Status:** Final  
-**Date:** 2026-06-21  
-**Assignment:** 11323 AT2 — Part 2 (Mini Application)  
-**Stack:** Vite + React · Tailwind · D3.js · LocalStorage · Vercel · Anthropic API
+**Status:** Synced to implementation
+**Date:** 2026-06-22
+**Assignment:** 11323 AT2 — Part 2 (Mini Application)
+**Stack:** Vite + React + TypeScript · Tailwind CSS · D3.js · LocalStorage · html2canvas
+
+> This brief was rewritten from scratch against the actual codebase rather than patched. Earlier drafts described a dark Linear-style theme with a constellation graph as the centrepiece and a Claude API call as a required step — none of that survived contact with the tutor's "avoid paid APIs, be graphically rigorous" guidance and the student's own visual direction. What's below is what's actually built.
 
 ---
 
 ## 1. Problem Statement
 
-Studio research is a loose folder of images with no traceable link to the final project and no mechanism for visual consistency across design panels. Students cannot see how their precedent research relates to each other or to their own project, and palette choices are ad hoc rather than grounded in source material.
+Studio precedent research is usually a loose folder of saved images with no traceable link to the project's own concept and no mechanism for visual consistency across design panels. Students can't easily see how their precedents relate to each other, to their concept language, or to a usable colour/material palette — research and design output stay disconnected.
 
 ---
 
 ## 2. Relationship to Part 1 (Conceptassistant Skill)
 
-This app is the direct downstream tool from the **Conceptassistant Claude Skill** built in Part 1.
-
-The Conceptassistant Skill handles the AI reasoning — synthesising a project brief into concept directions and initial precedent suggestions. The Precedent Graph app picks up from there, giving those suggestions a visual structure and turning them into a traceable, exportable reference.
-
-**The handoff:**
+This app is the downstream tool from the **Conceptassistant Claude Skill** built in Part 1 (assessed separately under "Technical Skills" in the AT2 rubric — out of scope for this brief).
 
 ```
 Conceptassistant Skill (Part 1)
   → concept directions + precedent suggestions + research insights
       ↓
 Precedent Graph App (Part 2)
-  → log precedents → visualise connections → generate palette → export style kit
+  → log precedents → tag against a concept → extract palette + materials
+  → confirm real influences → export a style kit
 ```
-
-Neither is complete without the other. Together they form a full AI-assisted design research workflow.
 
 ---
 
 ## 3. Product Overview
 
-A single-page web application hosted on Vercel where architecture students:
+A single-page web app, organised into four views reached via horizontal tabs (**Library / Project / Connections / Export**), where a student:
 
-1. Log precedent buildings — auto-populated from Wikipedia, palette extracted from photography automatically
-2. See those precedents as an interactive node graph, auto-connected by shared concept tags
-3. Use a Claude-powered Analyse feature to identify which logged precedents are real influences on their project
-4. Generate a traceable material palette — every colour tied back to its source building
-5. Export a style kit (palette + graphic language) as a reference image for building design panels
+1. Maintains a precedent library — 47 real entries sourced from Divisare, each with a real colour palette and (where visually evidenced) material swatches extracted directly from its image
+2. Defines their own project as a permanent singleton — title, concept summary, concept tags — and gets deterministic tag suggestions from their own summary text
+3. Marks precedents as **influences**, which builds a combined colour palette and material set, and always draws a connection to the project in the constellation graph regardless of shared tags
+4. Optionally runs **Analyse** to rank logged precedents against their concept tags and surface concept gaps — offline and free by default, with an optional Claude comparison if the student supplies their own API key
+5. Exports a one-page PNG style kit — palette, materials, concept tags, graphic key, and a source-precedent citation list — previewed live before download
 
-Each student's data lives in their own browser (localStorage). No login, no database, no account — open the URL and start.
+Data lives entirely in the browser (`localStorage`). No login, no database, no required network calls.
 
 ---
 
@@ -53,15 +50,16 @@ Each student's data lives in their own browser (localStorage). No login, no data
 
 ```ts
 interface Precedent {
-  id: string;           // uuid
-  name: string;         // building name
+  id: string;
+  name: string;
   architect: string;
   year: number;
-  demonstrates: string; // one specific note, e.g. "Concrete as thermal mass — weight anchors the courtyard"
-  tags: string[];       // slugified vocabulary tags, e.g. ["concrete", "threshold", "civic"]
-  swatches: Swatch[];   // auto-extracted from image, up to 5
-  isInfluence: boolean; // true = included in palette and Analyse output
-  imageUrl: string;     // auto-populated from Wikipedia or student upload
+  demonstrates: string;        // factual note (often location/typology); never a fabricated design claim
+  tags: string[];               // slugified controlled-vocabulary tags
+  swatches: Swatch[];           // up to 7, k-means extracted from the real image
+  isInfluence: boolean;
+  imageUrl: string;
+  materialTextures?: Record<string, string>; // optional real uploaded texture per material tag
 }
 ```
 
@@ -69,60 +67,27 @@ interface Precedent {
 
 ```ts
 interface Swatch {
-  hex: string;      // e.g. "#C4B49A" — extracted by canvas, not manually entered
-  label: string;    // e.g. "Weathered concrete" — student labels after extraction
-  sourceId: string; // precedent id — every colour traces back to a building
+  hex: string;      // extracted by canvas k-means, never manually typed
+  label: string;     // student labels after extraction; blank is rendered as just the hex, not "Unlabelled"
+  sourceId: string;
 }
 ```
 
-### 4.3 Project
+### 4.3 Project (singleton)
 
 ```ts
 interface Project {
-  id: "project";        // singleton
+  id: "project";
   title: string;
   summary: string;
-  tags: string[];       // concept tags — drives connections to precedents in graph
-  influenceIds: string[]; // confirmed by student after Analyse
+  tags: string[];
+  influenceIds: string[]; // kept in sync with precedents' isInfluence flags
 }
 ```
 
 ### 4.4 Tag Vocabulary
 
-Tags are drawn from a pre-embedded controlled vocabulary in `tagVocabulary.ts`. This ensures consistency — "garden" and "gardens" cannot diverge, so graph edges are always meaningful.
-
-```ts
-export const TAG_VOCABULARY: Record<string, string[]> = {
-  "Natural Elements": [
-    "water", "garden", "landscape", "light", "shadow",
-    "topography", "vegetation", "earth", "sky", "coast"
-  ],
-  "Material": [
-    "concrete", "timber", "steel", "brick", "glass",
-    "stone", "rammed-earth", "ceramic", "copper", "textile"
-  ],
-  "Spatial Quality": [
-    "threshold", "compression", "procession", "void",
-    "enclosure", "transparency", "datum", "sequence",
-    "refuge", "prospect"
-  ],
-  "Programme": [
-    "civic", "domestic", "sacred", "institutional",
-    "public-ground", "memorial", "cultural", "educational"
-  ],
-  "Concept": [
-    "materiality", "tectonic", "adaptive-reuse", "hybrid",
-    "boundary", "dialogue", "fragment", "ruin", "palimpsest",
-    "in-between"
-  ],
-  "Atmosphere": [
-    "warmth", "austerity", "stillness", "movement",
-    "rawness", "refinement", "heaviness", "lightness"
-  ],
-}
-```
-
-Free-text entry is permitted as fallback. All tags stored as slugs — normalised to lowercase, hyphenated on save.
+Unchanged structure, six categories in `tagVocabulary.ts` (Natural Elements, Material, Spatial Quality, Programme, Concept, Atmosphere). Free-text entry is still permitted as a fallback; everything is slugified on save.
 
 ### 4.5 State Shape
 
@@ -132,317 +97,231 @@ interface AppState {
   project: Project;
   ui: {
     selected: string | null;
-    sidebarMode: "add" | "edit" | "palette" | "export" | "analyse" | null;
-    activeTagFilters: string[];   // tags currently filtering the graph
-    analyseResult: AnalyseResult | null; // Claude's last response
+    activeTagFilters: string[];
+    analyseResult: AnalyseResult | null;
   };
-}
-
-interface AnalyseResult {
-  recommendations: {
-    precedentId: string;
-    reason: string; // one sentence from Claude
-  }[];
-  gaps: string[]; // themes Claude noticed are missing
+  nodePositions: Record<string, { x: number; y: number }>;
 }
 ```
 
-Persisted to `localStorage` under key `"precedent-graph-v1"`. On first load, seed data (15–20 precedents) is written if the key is absent.
+Persisted to `localStorage` under `"precedent-graph-v1"`. The write is wrapped in a try/catch — if the quota is exceeded (e.g. several uploaded material textures), the app keeps running in-memory rather than crashing.
 
 ---
 
-## 5. AI Features
+## 5. Features
 
-### 5.1 Wikipedia Auto-Fill (automated, not AI)
+### 5.1 Wikipedia Auto-Fill (deterministic, not AI)
 
-When a student types a building name in the Add Precedent form:
+Typing a building name and clicking "Look up" fetches `https://en.wikipedia.org/api/rest_v1/page/summary/{title}` (free, keyless) and auto-fills architect/year/description/thumbnail. For buildings not on Wikipedia, a student pastes any image URL instead.
 
-```
-Student types name → fetch Wikipedia summary API (free, no key)
-  → auto-fill: architect, year, description snippet, thumbnail image URL
-  → canvas extracts palette from thumbnail automatically
-  → student writes "demonstrates" note + confirms/edits tags
-  → save
-```
-
-Endpoint: `https://en.wikipedia.org/api/rest_v1/page/summary/{title}`  
-Returns: `thumbnail.source`, `description`, `extract` — all used directly.
-
-For buildings not on Wikipedia: student uploads or pastes any image URL → canvas extraction still runs.
-
-### 5.2 Canvas Colour Extraction (automated, not AI)
-
-When an image is available (from Wikipedia or student upload):
+### 5.2 Colour Extraction — with two real-world fallbacks
 
 ```
-Image → draw to offscreen <canvas> → sample pixel grid
-  → cluster by HSL distance (k-means, k=5) → return top 5 hex values
-  → displayed as swatch chips for student to label
+Image URL → try direct canvas read
+  → blocked by CORS (common on Dezeen/Divisare)? retry via images.weserv.nl (free, keyless proxy)
+    → still fails? student uploads the file directly (FileReader, never cross-origin, always works)
+  → k-means cluster (k=7) → 7 hex swatches, unlabelled until the student names them
 ```
 
-Pure client-side JavaScript. No network call. Works offline. Student never manually picks a hex code — they only label the colours that are extracted ("board-form concrete", "oxidised copper").
+Pure client-side. The proxy fallback was verified against a real Divisare image during development; the same image that fails direct canvas access succeeds through the proxy.
 
-### 5.3 Claude Analyse Button (AI)
+### 5.3 Suggest Tags From Concept (deterministic, not AI)
 
-This is the AI feature. After logging precedents from the Conceptassistant Skill's suggestions, the student clicks **Analyse** to find which ones genuinely align with their concept.
+Scans the project's free-text concept summary against a synonym/trigger map (`TAG_TRIGGERS` in `tagUtils.ts`) and proposes matching controlled-vocabulary tags for one-tap add. No network call.
 
-**What is sent to Claude:**
+### 5.4 Material Palette (two-tier)
+
+1. **Automatic** — every Material-vocabulary tag (concrete, timber, steel, brick, glass, stone, rammed-earth, ceramic, copper, textile) a precedent carries renders as a procedurally generated SVG texture pattern (`MaterialSwatch.tsx`) — pure vector, no images, no network, renders identically in the app and in the html2canvas export.
+2. **Manual override** — a student can upload a real texture (e.g. a download from architextures.org, which has no API and must be sourced by hand) per material tag on a precedent; the upload replaces the generated pattern wherever that swatch appears.
+
+24 of the 47 seed precedents carry real, visually-verified material tags (added by inspecting each photo directly); the rest are illustrations, diagrams, or physical-model photos where no material was visually legible, and were deliberately left untagged rather than guessed.
+
+### 5.5 Analyse — offline-first, Claude optional
+
+Per the tutor's explicit guidance to avoid paid APIs and not spend more than necessary, this is dual-mode and **offline by default**:
+
 ```ts
-{
-  projectConcept: project.summary,        // student's concept statement
-  projectTags: project.tags,             // their concept tags
-  precedents: precedents.map(p => ({
-    id: p.id,
-    name: p.name,
-    demonstrates: p.demonstrates,
-    tags: p.tags
-  }))
-}
+if (!API_KEY) return localAnalyse(project, precedents);  // always available, free, instant
+// only if the student supplies their own VITE_ANTHROPIC_API_KEY:
+try { return await claudeAnalyse(...) } catch { return localAnalyse(...) } // any failure falls back silently
 ```
 
-**What Claude returns:**
-```ts
-{
-  recommendations: [
-    { precedentId: "abc", reason: "Direct material parallel — both use concrete to anchor..." },
-    ...
-  ],
-  gaps: ["Nothing in your library addresses threshold or transition"]
-}
-```
-
-**What the app does with it:**
-- Recommended nodes pulse/highlight in the graph
-- Reasons appear in a panel beside each node
-- Student clicks to confirm or dismiss each recommendation
-- Confirmed precedents set `isInfluence: true` → palette generates from those
-
-**API call pattern:**
-```ts
-// utils/analyseInfluences.ts
-const response = await fetch('https://api.anthropic.com/v1/messages', {
-  method: 'POST',
-  headers: {
-    'x-api-key': import.meta.env.VITE_ANTHROPIC_API_KEY,
-    'anthropic-version': '2023-06-01',
-    'content-type': 'application/json',
-  },
-  body: JSON.stringify({
-    model: 'claude-haiku-4-5-20251001', // fast + cheap for this use case
-    max_tokens: 1024,
-    messages: [{ role: 'user', content: buildPrompt(project, precedents) }]
-  })
-});
-```
-
-API key stored in `.env` (local) and Vercel environment variables (deployed). Never committed to Git.
+`localAnalyse` ranks precedents by shared-tag count with the project and lists project tags no logged precedent covers ("gaps"). The optional Claude path (`claude-haiku-4-5-20251001`, called directly from the browser with `anthropic-dangerous-direct-browser-access`) returns the same shape with richer natural-language reasoning. The result panel always shows which source ("claude" or "offline") produced the recommendation — this is also explained to the student directly in the Settings panel, since it's a real position on AI's role, not just an implementation detail.
 
 ---
 
-## 6. Graph Model
+## 6. Graph Model ("Connections" view)
 
-### 6.1 Edge Calculation
-
-Edges derived from shared tags only — never stored, never manually drawn.
+### 6.1 Edges
 
 ```ts
-function computeEdges(nodes: (Precedent | Project)[]): Edge[] {
-  // For each pair (i, j), count shared tags
-  // Edge exists if sharedTagCount >= 1
-  // weight = sharedTagCount (drives line weight)
-}
+// 1. Shared-tag edges between any two nodes (weight = number of shared tags)
+// 2. Forced edges: every isInfluence precedent always connects to the project,
+//    even with zero shared tags — marking something an influence IS a stated
+//    relationship, and the graph should never hide that.
 ```
 
-Stroke width: `clamp(weight * 1.5, 1, 6)` px.
+Edge stroke opacity scales with weight (`0.15 + weight × 0.18`, capped at 0.75) so single-tag ties fade back and strong multi-tag ties read clearly even with 47+ nodes on screen.
 
-### 6.2 Node Types
+### 6.2 Node Behaviour
 
-| Type | Shape | Fill |
-|---|---|---|
-| Precedent (not influence) | Circle | Neutral |
-| Precedent (influence) | Circle + ring | Accent |
-| Precedent (Claude-recommended) | Circle + pulse animation | Highlight |
-| Own project | Diamond | Accent bold |
+- The project node is a red diamond, **permanently pinned** to the centre of the canvas (or wherever the student last dragged it) — it never drifts under the force simulation's repulsion, unlike precedent nodes.
+- Labels are hidden by default and reveal on hover, except for the project node and any influence/recommended precedent, which stay labelled — this was a deliberate fix once the library grew to 47 nodes and permanent labels became unreadable clutter.
+- Clicking the project node switches the active view to **Project** (not just a same-page scroll-to, since Project now has its own screen).
 
 ### 6.3 D3 Force Layout
 
-- `forceSimulation` with `forceManyBody`, `forceLink`, `forceCenter`
-- Drag, zoom, pan enabled
-- On tag change → edges recompute → simulation restarts at `alpha(0.3)`
-- On Analyse result → node appearance updates only, no re-simulation
-- Node positions saved to localStorage after drag
+`forceManyBody` (strength −900), `forceLink` (distance 140–320 scaled inversely by tie weight), `forceCollide` (radius 60), `forceCenter`. Drag, zoom, pan enabled; dragged precedent positions persist to `localStorage`.
 
 ### 6.4 Tag Filter Mode
 
-Clicking a tag in the filter panel enters filter mode:
-- Non-matching nodes dim to 15% opacity
-- Active filter shown as a dismissible chip
-- Multiple tags selectable — union logic (any match = visible)
-- Pure UI state change — no re-simulation
+Unchanged: non-matching nodes dim to 15% opacity, union logic across multiple active tags, pure UI state — no re-simulation.
 
 ---
 
 ## 7. Palette Logic
 
-```
-palette = precedents
-  .filter(p => p.isInfluence)
-  .flatMap(p => p.swatches.map(s => ({ ...s, sourceId: p.id })))
-  .dedupe by hex
+```ts
+palette = precedents.filter(p => p.isInfluence).flatMap(p => p.swatches).dedupe(by hex)
+materials = precedents.filter(p => p.isInfluence).flatMap(p => materialTagsOf(p.tags)).dedupe(by tag)
 ```
 
-Each swatch chip shows: colour block · hex value · student's label · source building name.
+Both are plain hooks (`usePalette.ts`, `useMaterialPalette.ts`) that recompute via `useMemo` whenever precedents change — no stored derived state.
 
 ---
 
-## 8. Style Kit Export
+## 8. Style Kit Export ("Export" view)
 
-Off-screen `<div>` containing:
-1. Colour palette row — swatches with hex + provenance
-2. Graphic language key — node shape legend, edge weight scale, font specimen
-3. Tag cloud — influence-precedent tags in relative sizes
+Previously rendered off-screen and downloaded blind; now shown as a **live, visible preview** in its own view before the student clicks "Download PNG" — a usability fix, since exporting something you can't see first is a bad pattern.
 
-`html2canvas` → PNG download. No server round-trip.
+Sections, top to bottom:
+1. Title + concept summary
+2. Concept tags
+3. Palette grid — colour, hex (or material label if the student set one), source building
+4. Materials row — texture swatch, material name, source building
+5. Graphic key (node/edge legend) + **Source precedents** list (name, architect, year of every influence) — replaced an earlier generic "Aa Bb Cc" typeface specimen, since a citation list is actual evidence for the work, not decoration
+
+Built entirely with inline hex styling (no Tailwind classes, no CSS custom properties) so `html2canvas` never hits an unsupported colour function — verified against the app's real light-theme palette, which is plain hex already, but kept deliberately conservative.
 
 ---
 
-## 9. Architecture Decisions
+## 9. Settings Panel
 
-### ADR-01: State — React Context + useReducer
+Opens from the header gear icon. Three sections, each tied to something real rather than a toggle for its own sake:
+- **About this tool** — states the actual design problem in one paragraph, and explains the offline-by-default Analyse decision in the student's own words (this doubles as visible evidence for the AT2 critical-reflection criterion, not just something explained verbally).
+- **Data** — Reset project (clears title/summary/tags/influences, keeps the library) and Reset everything (full restore to the seed library), both confirm-gated.
+- **Tips** — Wikipedia lookup hint, and the image-upload fallback hint.
 
-No async middleware needed. localStorage sync via single `useEffect`. Revisit if undo/redo history is added.
+---
+
+## 10. Navigation & Layout
+
+- **Header**: title, live counts, a collapse toggle (☰) for the right inspector panel, settings gear.
+- **View tabs** (horizontal, underline-active style): Library / Project / Connections / Export — replaced an earlier single long scrolling page once the precedent count grew to 47 and a left-sidebar nav variant, both of which were tried and rejected as visually worse than a clean horizontal tab strip.
+- **Right inspector panel** (Library & Connections views only): tag filter chips, selected-precedent detail (swatches, materials, tags, edit/delete), live palette. Collapsible via the header toggle so the Library grid can use the full width when filters aren't needed.
+- **Project** and **Export** views intentionally have no right panel — it isn't relevant there.
+
+---
+
+## 11. Architecture Decisions
+
+### ADR-01: State — React Context + `useReducer`
+Unchanged from the original plan. No async middleware needed.
 
 ### ADR-02: D3 owns the SVG
+D3 mutates the SVG DOM directly on tick; React owns everything outside `<svg>`.
 
-D3 mutates SVG DOM directly on tick — React reconciler is bypassed for performance. React owns everything outside `<svg>`.
+### ADR-03: Analyse is offline-first, not Claude-first
+Reversed from the original brief. The tutor's announcement explicitly asked students to avoid paid APIs and not spend more than necessary — a deterministic tag-overlap ranking satisfies the same product need (which precedents genuinely relate to the concept) without any cost or network dependency. Claude remains available as an enhancement, never a requirement.
 
-### ADR-03: Claude Haiku for Analyse
+### ADR-04: CORS proxy → file upload, not "give up"
+Pasting a Dezeen/Divisare image URL frequently fails direct canvas reads due to missing CORS headers. Rather than declare those sites unsupported, the app retries through a free public proxy, then falls back to local file upload (which is never cross-origin). This was tested against a real failing case before being trusted.
 
-Haiku is fast (~1s), cheap, and sufficient for structured JSON output from a well-formed prompt. Sonnet unnecessary for this task.
+### ADR-05: Procedural SVG materials, not scraped textures
+architextures.org has no API and is licensed for manual, one-at-a-time downloads — not automated scraping. Building a deterministic, offline SVG pattern per material tag gets full automatic coverage for free; a manual upload path covers the cases where a student wants a specific real texture.
 
-### ADR-04: Direct API call from browser
+### ADR-06: Visual material tagging, not guessed tagging
+Material tags were added by downloading and visually inspecting all 47 precedent images, not by inferring from project titles. Roughly half the library (illustrations, diagrams, physical-model photos) was left deliberately untagged where no material was actually visible in the image, rather than fabricating a plausible-sounding guess.
 
-For a student demo, calling the Anthropic API directly from the browser is acceptable. The key is in Vercel env vars, not in the bundle. A Vercel serverless function (`/api/analyse`) is the production-safe upgrade but out of scope here.
-
-### ADR-05: Styling — Tailwind + CSS Custom Properties
-
-Tailwind for layout. CSS custom properties (`--color-accent`, `--color-bg`) bridge into SVG where Tailwind can't reach. Accent colour adjustable in one line once real palette is known.
+### ADR-07: Styling — Tailwind + CSS custom properties (light/red theme)
+The original dark Linear-style theme was replaced with a light "paper" theme (greyscale + red accent) per the student's own direction and the tutor's "graphically rigorous, not AI slop" guidance. All theme tokens are plain hex values in `index.css`, which also made the html2canvas export safe without extra conversion work.
 
 ---
 
-## 10. Component Architecture
+## 12. Component Architecture (actual)
 
 ```
 src/
 ├── main.tsx
-├── App.tsx                          # root layout, context provider
+├── App.tsx                          # root layout, view-tab state, all handlers
+├── types.ts
 ├── store/
-│   ├── appStore.tsx                 # Context + useReducer + localStorage sync
-│   ├── actions.ts                   # typed action creators
-│   └── seedData.ts                  # 15-20 hardcoded precedents
+│   ├── appStore.tsx                 # Context + useReducer + localStorage sync (try/catch)
+│   ├── actions.ts                   # typed action creators, incl. resetProject/resetAll
+│   └── seedData.ts                  # 47 real precedents sourced from Divisare
 ├── data/
-│   └── tagVocabulary.ts             # grouped controlled vocabulary
+│   └── tagVocabulary.ts
 ├── components/
 │   ├── graph/
-│   │   ├── Graph.tsx                # SVG container, D3 simulation lifecycle
-│   │   ├── NodeLayer.tsx            # D3-managed nodes
-│   │   └── EdgeLayer.tsx            # D3-managed edges
+│   │   ├── Graph.tsx                # SVG container, D3 simulation lifecycle, project pin
+│   │   ├── NodeLayer.tsx            # hover-reveal labels, diamond/circle shapes
+│   │   └── EdgeLayer.tsx            # weight-scaled opacity
+│   ├── precedent/
+│   │   ├── PrecedentCard.tsx
+│   │   └── PrecedentForm.tsx        # Wikipedia lookup, colour + material texture upload
 │   ├── sidebar/
-│   │   ├── Sidebar.tsx              # shell + mode router
-│   │   ├── PrecedentForm.tsx        # add/edit — Wikipedia lookup + canvas extraction
-│   │   ├── ProjectForm.tsx          # edit own project
-│   │   ├── SwatchEditor.tsx         # shows extracted swatches, student adds labels
-│   │   └── TagInput.tsx             # grouped pill picker + free-text fallback
-│   ├── tags/
-│   │   └── TagFilterPanel.tsx       # clickable tag chips → sets activeTagFilters
-│   ├── analyse/
-│   │   └── AnalysePanel.tsx         # Analyse button + Claude result display
-│   ├── palette/
-│   │   ├── PalettePanel.tsx         # full palette view
-│   │   └── SwatchChip.tsx           # colour block + hex + label + provenance
-│   └── export/
-│       └── StyleKitExport.tsx       # off-screen render + download trigger
+│   │   ├── ProjectPanel.tsx         # singleton project editor + Suggest-tags + Analyse trigger
+│   │   └── TagInput.tsx
+│   ├── tags/TagFilterPanel.tsx
+│   ├── analyse/AnalysePanel.tsx     # shows recommendations/gaps + claude-vs-offline badge
+│   ├── palette/SwatchChip.tsx
+│   ├── materials/MaterialSwatch.tsx # procedural SVG patterns + manual image override
+│   ├── export/StyleKitExport.tsx    # inline-hex, html2canvas-safe export sheet
+│   ├── settings/SettingsPanel.tsx
+│   └── nav/NavSidebar.tsx           # horizontal view-tab strip (despite the filename)
 ├── hooks/
-│   ├── useGraph.ts                  # derive nodes/edges from state
-│   └── usePalette.ts                # derive palette from influence precedents
-├── utils/
-│   ├── graphUtils.ts                # computeEdges, computeTagWeights
-│   ├── tagUtils.ts                  # slugify, normalise, allTagsInUse
-│   ├── colourUtils.ts               # canvas extraction, hex validation
-│   ├── wikipediaUtils.ts            # fetch + parse Wikipedia summary API
-│   ├── analyseInfluences.ts         # Anthropic API call + prompt builder
-│   └── exportUtils.ts               # html2canvas wrapper
-└── types.ts                         # all interfaces
+│   ├── useGraph.ts
+│   ├── usePalette.ts
+│   └── useMaterialPalette.ts
+└── utils/
+    ├── graphUtils.ts                # computeEdges incl. forced influence→project edges
+    ├── tagUtils.ts                  # slugify, normalise, suggestTagsFromText, TAG_TRIGGERS
+    ├── materialUtils.ts             # getMaterialTags
+    ├── colourUtils.ts               # canvas extraction, proxy fallback, file fallback
+    ├── wikipediaUtils.ts
+    └── analyseInfluences.ts         # offline-first, optional Claude
 ```
 
 ---
 
-## 11. Seed Data
+## 13. Precedent Library
 
-15–20 precedents hardcoded in `seedData.ts`, sourced from student-provided URLs. Each entry populated using Wikipedia auto-fill + canvas extraction during authoring — same workflow a student uses in the app. Tags drawn exclusively from `tagVocabulary.ts`. Every tag appears on at least 2 precedents so the graph has meaningful edges on first open.
-
-**Seed data is authored separately** once student provides precedent URLs. See `seedData.ts` task.
+47 real precedents (not placeholder seed data), sourced from a student-curated list of Divisare links — name, architect, year, location, and image for each. Colour palettes (7 swatches each) were extracted programmatically from the real images, with an automatic CORS-proxy fallback where the direct read was blocked. Material tags were added by visually inspecting every image; 24 of 47 carry at least one evidence-based material tag.
 
 ---
 
-## 12. Build Sequence
-
-### Sprint 1 — Foundation
-- [ ] Scaffold Vite + React + Tailwind + D3
-- [ ] `types.ts`, `appStore.tsx`, `actions.ts`
-- [ ] `tagVocabulary.ts` + `tagUtils.ts` (slugify, normalise)
-- [ ] `seedData.ts` (15–20 precedents — requires URLs first)
-- [ ] `computeEdges` in `graphUtils.ts`
-- [ ] Basic D3 force graph rendering (circles + lines)
-- [ ] Edge weight → stroke width verified
-
-### Sprint 2 — Data entry + tag filter
-- [ ] `wikipediaUtils.ts` — fetch + parse summary API
-- [ ] `colourUtils.ts` — canvas pixel extraction
-- [ ] `PrecedentForm.tsx` — Wikipedia lookup + auto-fill + swatch extraction
-- [ ] `SwatchEditor.tsx` — label extracted swatches
-- [ ] `TagInput.tsx` — grouped pill picker
-- [ ] `ProjectForm.tsx`
-- [ ] `TagFilterPanel.tsx` — filter → D3 opacity update
-- [ ] Graph re-settles on data change
-
-### Sprint 3 — AI + Palette
-- [ ] `analyseInfluences.ts` — Anthropic API call + prompt
-- [ ] `AnalysePanel.tsx` — button + result display + confirm/dismiss
-- [ ] Node highlight states for Claude recommendations
-- [ ] `usePalette.ts` hook
-- [ ] `PalettePanel.tsx` + `SwatchChip.tsx` with provenance
-
-### Sprint 4 — Export + Polish
-- [ ] `StyleKitExport.tsx` + html2canvas PNG download
-- [ ] Node position persistence (save drag positions to localStorage)
-- [ ] Node click → sidebar shows precedent detail
-- [ ] Vercel deploy + env var setup
-- [ ] Offline smoke test (everything except Analyse works without network)
-
----
-
-## 13. Constraints
+## 14. Constraints
 
 | Constraint | How enforced |
 |---|---|
-| No paid APIs except Anthropic | Wikipedia is free/keyless; canvas extraction is client-side |
-| Offline-capable (except Analyse) | No runtime network calls except Wikipedia lookup + Analyse button |
-| Edges never manual | `computeEdges` is pure function; no edge CRUD in store |
-| Every palette colour traces to a source | `Swatch.sourceId` required; `SwatchChip` always renders provenance |
-| Tags consistent | Slugified on save; all from vocabulary by default |
-| API key never in bundle | `.env` locally; Vercel env vars in production |
+| Avoid paid APIs by default | Analyse runs offline unless the student supplies their own key; Wikipedia and the image proxy are free/keyless |
+| No fabricated content | Material tags, "demonstrates" notes, and the optional API key are never invented — left blank where there's no real evidence |
+| Every palette colour traces to a source | `Swatch.sourceId` always set; export and live palette always show provenance |
+| Tags consistent | Slugified on save; controlled vocabulary by default, free text as fallback |
+| Storage failures don't crash the app | `localStorage.setItem` wrapped in try/catch |
+| API key never required, never hardcoded | `.env`-only, optional, dual-mode fallback always present |
 
 ---
 
-## 14. Where AI Adds Value vs. Where It Doesn't
+## 15. Where AI Adds Value vs. Where It Doesn't
 
 | Task | What does it | Why |
 |---|---|---|
 | Building info lookup | Wikipedia REST fetch | Deterministic, fast, accurate |
-| Colour palette | Canvas pixel extraction | Deterministic — AI guessing colours would be worse |
-| Tag connections / graph edges | Rule-based algorithm | Precision matters; shared tags are facts not interpretations |
-| Identifying real influences | Claude API | Requires reading intent from language — only AI can do this |
-| Gaps in research | Claude API | Requires understanding what's missing, not just what's present |
+| Colour palette | Canvas k-means extraction | Deterministic — guessing colours would be worse than measuring them |
+| Material identification | Direct visual inspection (by the developer, once) baked into seed data | Verifiable from the photo; no ongoing inference needed at runtime |
+| Tag connections / graph edges | Rule-based shared-tag function | Precision matters; shared tags are facts, not interpretations |
+| Concept-tag suggestions | Deterministic keyword/synonym matching | Transparent and free; good enough for a controlled vocabulary |
+| Ranking precedents against a concept | Offline tag-overlap by default; optional Claude for richer reasoning | Most of the value is structural (shared tags); language-level nuance is where Claude genuinely adds something a rule can't |
 
-This split is the core argument for the critical reflection: AI is used precisely where human-like reasoning is needed, and kept out where deterministic accuracy is better.
+This split is the actual evidence for the critical-reflection criterion: AI was deliberately kept optional and was added only where rule-based logic clearly couldn't do the job — not because Claude was available, but because everywhere else, a transparent, free, deterministic approach was the stronger design choice.

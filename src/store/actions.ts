@@ -12,7 +12,9 @@ export type Action =
   | { type: "SET_TAG_FILTERS"; tags: string[] }
   | { type: "TOGGLE_TAG_FILTER"; tag: string }
   | { type: "SET_ANALYSE_RESULT"; result: AnalyseResult | null }
-  | { type: "SAVE_NODE_POSITION"; id: string; x: number; y: number };
+  | { type: "SAVE_NODE_POSITION"; id: string; x: number; y: number }
+  | { type: "RESET_PROJECT" }
+  | { type: "RESET_ALL" };
 
 export const addPrecedent = (precedent: Precedent): Action => ({ type: "ADD_PRECEDENT", precedent });
 export const updatePrecedent = (id: string, changes: Partial<Precedent>): Action => ({
@@ -46,3 +48,5 @@ export const saveNodePosition = (id: string, x: number, y: number): Action => ({
   x,
   y,
 });
+export const resetProject = (): Action => ({ type: "RESET_PROJECT" });
+export const resetAll = (): Action => ({ type: "RESET_ALL" });

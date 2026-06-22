@@ -1,6 +1,8 @@
 import { forwardRef } from "react";
 import type { PaletteEntry } from "../../hooks/usePalette";
-import type { Project } from "../../types";
+import type { MaterialEntry } from "../../hooks/useMaterialPalette";
+import type { Precedent, Project } from "../../types";
+import { MaterialSwatch } from "../materials/MaterialSwatch";
 
 // Off-screen "style kit" sheet captured to PNG by html2canvas.
 // Everything is inline-styled with explicit hex (no CSS variables / Tailwind
@@ -23,10 +25,12 @@ const FONT = '"Inter", -apple-system, system-ui, "Segoe UI", Roboto, sans-serif'
 interface StyleKitExportProps {
   project: Project;
   palette: PaletteEntry[];
+  materials: MaterialEntry[];
+  influences: Precedent[];
 }
 
 export const StyleKitExport = forwardRef<HTMLDivElement, StyleKitExportProps>(
-  ({ project, palette }, ref) => {
+  ({ project, palette, materials, influences }, ref) => {
     const today = new Date().toISOString().slice(0, 10);
 
     return (
@@ -86,18 +90,50 @@ export const StyleKitExport = forwardRef<HTMLDivElement, StyleKitExportProps>(
             </div>
           ) : (
             <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
-              {palette.map((s) => (
+              {palette.map((s, i) => (
                 <div
-                  key={s.hex}
+                  key={s.hex + i}
                   style={{ border: `1px solid ${C.hairline}`, borderRadius: 8, overflow: "hidden", background: C.surface }}
                 >
                   <div style={{ height: 64, background: s.hex }} />
                   <div style={{ padding: "8px 10px" }}>
-                    <div style={{ fontSize: 12, fontWeight: 500 }}>{s.label || "Unlabelled"}</div>
-                    <div style={{ fontSize: 11, color: C.tertiary, fontFamily: "monospace", textTransform: "uppercase" }}>
+                    {s.label && <div style={{ fontSize: 12, fontWeight: 500 }}>{s.label}</div>}
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color: s.label ? C.tertiary : C.ink,
+                        fontWeight: s.label ? 400 : 500,
+                        fontFamily: "monospace",
+                        textTransform: "uppercase",
+                        marginTop: s.label ? 0 : 2,
+                      }}
+                    >
                       {s.hex}
                     </div>
                     <div style={{ fontSize: 11, color: C.subtle, marginTop: 2 }}>{s.sourceName}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div style={{ marginBottom: 28 }}>
+          <SectionLabel>Materials — drawn from influence precedents</SectionLabel>
+          {materials.length === 0 ? (
+            <div style={{ fontSize: 13, color: C.tertiary }}>
+              No influences selected yet — mark precedents as influences to build the material set.
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 14 }}>
+              {materials.map((m) => (
+                <div key={m.tag} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <MaterialSwatch tag={m.tag} size={36} imageOverride={m.imageOverride} plain />
+                  <div>
+                    <div style={{ fontSize: 12, fontWeight: 500, textTransform: "capitalize" }}>
+                      {m.tag.replace(/-/g, " ")}
+                    </div>
+                    <div style={{ fontSize: 11, color: C.subtle }}>{m.sourceName}</div>
                   </div>
                 </div>
               ))}
@@ -137,13 +173,22 @@ export const StyleKitExport = forwardRef<HTMLDivElement, StyleKitExportProps>(
           </div>
 
           <div>
-            <SectionLabel>Typeface — Inter</SectionLabel>
-            <div style={{ fontSize: 34, fontWeight: 600, letterSpacing: -0.5, lineHeight: 1.1 }}>
-              Aa Bb Cc
-            </div>
-            <div style={{ fontSize: 13, color: C.muted, marginTop: 6, lineHeight: 1.6 }}>
-              Headings 600 · Body 400. Sentence case, tight tracking on display.
-            </div>
+            <SectionLabel>Source precedents</SectionLabel>
+            {influences.length === 0 ? (
+              <div style={{ fontSize: 13, color: C.tertiary }}>
+                No influences selected yet — mark precedents as influences to list them here.
+              </div>
+            ) : (
+              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                {influences.map((p) => (
+                  <div key={p.id} style={{ fontSize: 13, color: C.muted, lineHeight: 1.5 }}>
+                    <span style={{ color: C.ink, fontWeight: 500 }}>{p.name}</span>
+                    {p.architect && ` — ${p.architect}`}
+                    {p.year ? `, ${p.year}` : ""}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
 

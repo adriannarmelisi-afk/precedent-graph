@@ -1,4 +1,6 @@
 import type { Precedent } from "../../types";
+import { getMaterialTags } from "../../utils/materialUtils";
+import { MaterialSwatch } from "../materials/MaterialSwatch";
 
 interface PrecedentCardProps {
   precedent: Precedent;
@@ -15,7 +17,9 @@ export function PrecedentCard({
   onSelect,
   onToggleInfluence,
 }: PrecedentCardProps) {
-  const { id, name, architect, year, tags, swatches, imageUrl, isInfluence } = precedent;
+  const { id, name, architect, year, tags, swatches, imageUrl, isInfluence, materialTextures } =
+    precedent;
+  const materialTags = getMaterialTags(tags);
 
   return (
     <button
@@ -51,12 +55,25 @@ export function PrecedentCard({
 
         {swatches.length > 0 && (
           <div className="mt-2.5 flex gap-1">
-            {swatches.map((s) => (
+            {swatches.map((s, i) => (
               <span
-                key={s.hex + s.label}
+                key={s.hex + s.label + i}
                 className="h-5 w-5 rounded border border-hairline"
                 style={{ backgroundColor: s.hex }}
                 title={`${s.label} — ${s.hex}`}
+              />
+            ))}
+          </div>
+        )}
+
+        {materialTags.length > 0 && (
+          <div className="mt-2.5 flex gap-1">
+            {materialTags.map((tag) => (
+              <MaterialSwatch
+                key={tag}
+                tag={tag}
+                size={28}
+                imageOverride={materialTextures?.[tag]}
               />
             ))}
           </div>

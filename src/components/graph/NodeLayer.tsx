@@ -25,7 +25,16 @@ export function renderNodes(
       return group;
     });
 
-  groups.on("click", (_event, d) => onClick(d.id)).call(drag);
+  groups
+    .on("click", (_event, d) => onClick(d.id))
+    .on("mouseenter", function () {
+      d3.select(this).select<SVGTextElement>("text").attr("opacity", 1);
+    })
+    .on("mouseleave", function (_event, d) {
+      const alwaysShow = d.kind === "project" || d.isInfluence || d.isRecommended;
+      if (!alwaysShow) d3.select(this).select<SVGTextElement>("text").attr("opacity", 0);
+    })
+    .call(drag);
 
   groups.each(function (d) {
     const group = d3.select(this);
@@ -57,6 +66,7 @@ export function renderNodes(
       .attr("stroke", d.isInfluence && !isProject ? "var(--color-primary)" : "none")
       .attr("stroke-width", 1.5);
 
+    const alwaysShowLabel = isProject || d.isInfluence || d.isRecommended;
     group
       .select<SVGTextElement>("text")
       .text(d.label)
@@ -65,6 +75,7 @@ export function renderNodes(
       .attr("fill", "var(--color-ink-subtle)")
       .attr("font-size", 11)
       .attr("font-family", "var(--font-text)")
+      .attr("opacity", alwaysShowLabel ? 1 : 0)
       .style("pointer-events", "none");
   });
 

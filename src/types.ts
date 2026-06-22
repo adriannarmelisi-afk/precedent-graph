@@ -14,6 +14,9 @@ export interface Precedent {
   swatches: Swatch[];
   isInfluence: boolean;
   imageUrl: string;
+  // Optional manually-uploaded reference texture per material tag (e.g. a real
+  // Architextures.org download), keyed by the Material vocabulary tag.
+  materialTextures?: Record<string, string>;
 }
 
 export interface Project {

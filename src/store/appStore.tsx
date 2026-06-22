@@ -5,6 +5,14 @@ import { SEED_PRECEDENTS } from "./seedData";
 
 const STORAGE_KEY = "precedent-graph-v1";
 
+function blankProject(): AppState["project"] {
+  return { id: "project", title: "", summary: "", tags: [], influenceIds: [] };
+}
+
+function blankUi(): AppState["ui"] {
+  return { selected: null, sidebarMode: null, activeTagFilters: [], analyseResult: null };
+}
+
 function loadInitialState(): AppState {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) {
@@ -17,19 +25,8 @@ function loadInitialState(): AppState {
 
   return {
     precedents: SEED_PRECEDENTS,
-    project: {
-      id: "project",
-      title: "",
-      summary: "",
-      tags: [],
-      influenceIds: [],
-    },
-    ui: {
-      selected: null,
-      sidebarMode: null,
-      activeTagFilters: [],
-      analyseResult: null,
-    },
+    project: blankProject(),
+    ui: blankUi(),
     nodePositions: {},
   };
 }
@@ -99,6 +96,22 @@ function reducer(state: AppState, action: Action): AppState {
         nodePositions: { ...state.nodePositions, [action.id]: { x: action.x, y: action.y } },
       };
 
+    case "RESET_PROJECT":
+      return {
+        ...state,
+        project: blankProject(),
+        precedents: state.precedents.map((p) => ({ ...p, isInfluence: false })),
+        ui: { ...state.ui, selected: null, analyseResult: null },
+      };
+
+    case "RESET_ALL":
+      return {
+        precedents: SEED_PRECEDENTS,
+        project: blankProject(),
+        ui: blankUi(),
+        nodePositions: {},
+      };
+
     default:
       return state;
   }
@@ -115,7 +128,12 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reducer, undefined, loadInitialState);
 
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    } catch {
+      // Storage quota exceeded (e.g. too many uploaded material textures) —
+      // keep running in-memory rather than crashing; nothing else to do here.
+    }
   }, [state]);
 
   return <StoreContext.Provider value={{ state, dispatch }}>{children}</StoreContext.Provider>;

@@ -30,6 +30,7 @@ export function buildNodes(
 
 export function computeEdges(nodes: GraphNode[]): GraphEdge[] {
   const edges: GraphEdge[] = [];
+  const projectNode = nodes.find((n) => n.kind === "project");
 
   for (let i = 0; i < nodes.length; i++) {
     for (let j = i + 1; j < nodes.length; j++) {
@@ -38,6 +39,22 @@ export function computeEdges(nodes: GraphNode[]): GraphEdge[] {
       const shared = a.tags.filter((t) => b.tags.includes(t)).length;
       if (shared >= 1) {
         edges.push({ source: a.id, target: b.id, weight: shared });
+      }
+    }
+  }
+
+  // Marking a precedent as an influence is itself a stated relationship to the
+  // project, so always draw that connection even with zero shared tags.
+  if (projectNode) {
+    for (const n of nodes) {
+      if (n.kind !== "precedent" || !n.isInfluence) continue;
+      const alreadyLinked = edges.some(
+        (e) =>
+          (e.source === projectNode.id && e.target === n.id) ||
+          (e.source === n.id && e.target === projectNode.id),
+      );
+      if (!alreadyLinked) {
+        edges.push({ source: projectNode.id, target: n.id, weight: 1 });
       }
     }
   }

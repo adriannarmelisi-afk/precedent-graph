@@ -66,9 +66,14 @@ function loadImage(src: string): Promise<HTMLImageElement> {
   });
 }
 
-export async function extractPalette(src: string, k = 5): Promise<string[]> {
-  const img = await loadImage(src);
+// Free, keyless image proxy that adds CORS headers — used as a fallback when a
+// site (e.g. Dezeen, Divisare) doesn't allow cross-origin pixel reads directly.
+function proxiedUrl(src: string): string {
+  const noScheme = src.replace(/^https?:\/\//, "");
+  return `https://images.weserv.nl/?url=${encodeURIComponent(noScheme)}`;
+}
 
+function samplePixels(img: HTMLImageElement): number[][] {
   const w = 100;
   const h = Math.max(1, Math.round((img.height / img.width) * w));
   const canvas = document.createElement("canvas");
@@ -86,8 +91,45 @@ export async function extractPalette(src: string, k = 5): Promise<string[]> {
     if (data[i + 3] < 125) continue; // skip transparent pixels
     points.push([data[i], data[i + 1], data[i + 2]]);
   }
-  if (points.length === 0) return [];
+  return points;
+}
 
+function clusterToHex(points: number[][], k: number): string[] {
+  if (points.length === 0) return [];
   const centroids = kmeans(points, Math.min(k, points.length), 10);
   return centroids.map(rgbToHex);
+}
+
+export async function extractPalette(src: string, k = 5): Promise<string[]> {
+  try {
+    const img = await loadImage(src);
+    const points = samplePixels(img);
+    if (points.length > 0) return clusterToHex(points, k);
+  } catch {
+    // fall through to proxy
+  }
+
+  // Direct read failed (likely CORS) — retry via a free proxy that adds CORS headers.
+  const img = await loadImage(proxiedUrl(src));
+  const points = samplePixels(img);
+  return clusterToHex(points, k);
+}
+
+// Reads a locally-chosen file — never cross-origin, so this always works
+// regardless of where the original image came from.
+export function extractPaletteFromFile(file: File, k = 5): Promise<string[]> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async () => {
+      try {
+        const img = await loadImage(reader.result as string);
+        const points = samplePixels(img);
+        resolve(clusterToHex(points, k));
+      } catch (err) {
+        reject(err);
+      }
+    };
+    reader.onerror = () => reject(new Error("Couldn't read file"));
+    reader.readAsDataURL(file);
+  });
 }

@@ -14,5 +14,6 @@ export function renderEdges(g: d3.Selection<SVGGElement, unknown, null, undefine
     .join("line")
     .attr("stroke", "var(--color-hairline-tertiary)")
     .attr("stroke-width", (d) => edgeStrokeWidth(d.weight))
-    .attr("stroke-opacity", 0.7);
+    // Weak single-tag ties fade back so the strongest connections read clearly.
+    .attr("stroke-opacity", (d) => Math.min(0.15 + d.weight * 0.18, 0.75));
 }

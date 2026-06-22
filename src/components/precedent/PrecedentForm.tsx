@@ -3,8 +3,10 @@ import { useStore } from "../../store/appStore";
 import { addPrecedent, updatePrecedent } from "../../store/actions";
 import { TagInput } from "../sidebar/TagInput";
 import { fetchWikipediaSummary } from "../../utils/wikipediaUtils";
-import { extractPalette } from "../../utils/colourUtils";
+import { extractPalette, extractPaletteFromFile } from "../../utils/colourUtils";
 import { normaliseTags } from "../../utils/tagUtils";
+import { getMaterialTags } from "../../utils/materialUtils";
+import { MaterialSwatch } from "../materials/MaterialSwatch";
 import type { Precedent, Swatch } from "../../types";
 
 interface PrecedentFormProps {
@@ -26,6 +28,9 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
   const [demonstrates, setDemonstrates] = useState(precedent?.demonstrates ?? "");
   const [tags, setTags] = useState<string[]>(precedent?.tags ?? []);
   const [swatches, setSwatches] = useState<Swatch[]>(precedent?.swatches ?? []);
+  const [materialTextures, setMaterialTextures] = useState<Record<string, string>>(
+    precedent?.materialTextures ?? {},
+  );
 
   const [lookup, setLookup] = useState<Status>({ kind: "idle" });
   const [extract, setExtract] = useState<Status>({ kind: "idle" });
@@ -40,8 +45,19 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
     } catch {
       setExtract({
         kind: "error",
-        message: "Couldn't read colours (image blocked cross-origin). Try a Wikipedia image.",
+        message: "Couldn't read colours from that link. Try uploading the image file instead.",
       });
+    }
+  };
+
+  const runExtractionFromFile = async (file: File) => {
+    setExtract({ kind: "loading" });
+    try {
+      const hexes = await extractPaletteFromFile(file, 5);
+      setSwatches(hexes.map((hex) => ({ hex, label: "", sourceId: id })));
+      setExtract({ kind: hexes.length ? "ok" : "error", message: hexes.length ? undefined : "No colours found" });
+    } catch {
+      setExtract({ kind: "error", message: "Couldn't read that file." });
     }
   };
 
@@ -72,6 +88,21 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
   const setSwatchLabel = (index: number, label: string) =>
     setSwatches((prev) => prev.map((s, i) => (i === index ? { ...s, label } : s)));
 
+  const setMaterialTexture = (tag: string, file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      setMaterialTextures((prev) => ({ ...prev, [tag]: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeMaterialTexture = (tag: string) =>
+    setMaterialTextures((prev) => {
+      const next = { ...prev };
+      delete next[tag];
+      return next;
+    });
+
   const save = () => {
     if (!name.trim()) return;
     const entry: Precedent = {
@@ -84,6 +115,7 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
       swatches: swatches.map((s) => ({ ...s, sourceId: id })),
       isInfluence: precedent?.isInfluence ?? false,
       imageUrl,
+      materialTextures,
     };
     dispatch(mode === "add" ? addPrecedent(entry) : updatePrecedent(id, entry));
     onClose();
@@ -189,7 +221,23 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
                 {extract.kind === "loading" ? "Extracting…" : "Extract colours"}
               </button>
             </div>
-            {extract.message && <p className="mt-1 text-[11px] text-primary">{extract.message}</p>}
+            {extract.message && (
+              <div className="mt-1 flex items-center justify-between gap-2">
+                <p className="text-[11px] text-primary">{extract.message}</p>
+                <label className="shrink-0 cursor-pointer text-[11px] font-medium text-ink-subtle underline hover:text-primary">
+                  Upload image instead
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) runExtractionFromFile(file);
+                    }}
+                  />
+                </label>
+              </div>
+            )}
           </div>
 
           {imageUrl && (
@@ -247,6 +295,46 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
             </label>
             <TagInput selected={tags} onChange={setTags} />
           </div>
+
+          {getMaterialTags(tags).length > 0 && (
+            <div>
+              <label className="mb-2 block text-[10px] font-medium uppercase tracking-wide text-ink-tertiary">
+                Material textures
+                <span className="ml-1.5 font-normal normal-case">
+                  — auto-generated, or upload a real texture (e.g. from architextures.org)
+                </span>
+              </label>
+              <div className="flex flex-col gap-2">
+                {getMaterialTags(tags).map((tag) => (
+                  <div key={tag} className="flex items-center gap-2.5">
+                    <MaterialSwatch tag={tag} size={32} imageOverride={materialTextures[tag]} />
+                    <span className="w-24 shrink-0 text-[12px] text-ink-subtle">{tag}</span>
+                    <label className="cursor-pointer text-[11px] font-medium text-ink-subtle underline hover:text-primary">
+                      {materialTextures[tag] ? "Replace" : "Upload texture"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) setMaterialTexture(tag, file);
+                        }}
+                      />
+                    </label>
+                    {materialTextures[tag] && (
+                      <button
+                        type="button"
+                        onClick={() => removeMaterialTexture(tag)}
+                        className="text-[11px] text-ink-tertiary underline hover:text-primary"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="mt-6 flex justify-end gap-2 border-t border-hairline pt-4">

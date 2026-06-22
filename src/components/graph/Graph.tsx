@@ -50,6 +50,13 @@ export function Graph({
 
     const simNodes: GraphNode[] = nodes.map((n) => {
       const saved = nodePositions[n.id];
+      // The project node is always pinned — to its saved (dragged) spot if any,
+      // otherwise the centre — so it never drifts off under repulsion forces.
+      if (n.kind === "project") {
+        const x = saved?.x ?? width / 2;
+        const y = saved?.y ?? height / 2;
+        return { ...n, x, y, fx: x, fy: y };
+      }
       return { ...n, x: saved?.x, y: saved?.y };
     });
     const simEdges: SimEdge[] = edges.map((e) => ({ ...e }));
@@ -60,13 +67,14 @@ export function Graph({
         "link",
         d3
           .forceLink<GraphNode, SimEdge>(simEdges)
+          // Stronger ties (more shared tags) pull closer; weak single-tag ties stay loose.
+          .distance((d) => Math.max(140, 320 - d.weight * 30))
           .id((d) => d.id)
-          .distance(110)
-          .strength(0.3),
+          .strength(0.15),
       )
-      .force("charge", d3.forceManyBody().strength(-220))
+      .force("charge", d3.forceManyBody().strength(-900))
       .force("center", d3.forceCenter(width / 2, height / 2))
-      .force("collide", d3.forceCollide(34));
+      .force("collide", d3.forceCollide(60));
 
     simulationRef.current = simulation;
 
@@ -81,8 +89,11 @@ export function Graph({
       })
       .on("end", (event, d) => {
         if (!event.active) simulation.alphaTarget(0);
-        d.fx = null;
-        d.fy = null;
+        // The project node stays pinned wherever it's dropped; others settle freely.
+        if (d.kind !== "project") {
+          d.fx = null;
+          d.fy = null;
+        }
         if (typeof d.x === "number" && typeof d.y === "number") {
           onNodeDragEndRef.current(d.id, d.x, d.y);
         }
