@@ -37,10 +37,24 @@ function AppShell() {
   const projectTags = useMemo(() => new Set(project.tags), [project.tags]);
   const allTags = useMemo(() => allTagsInUse(precedents, project), [precedents, project]);
 
+  const [searchQuery, setSearchQuery] = useState("");
+
   const visiblePrecedents = useMemo(() => {
-    if (ui.activeTagFilters.length === 0) return precedents;
-    return precedents.filter((p) => p.tags.some((t) => ui.activeTagFilters.includes(t)));
-  }, [precedents, ui.activeTagFilters]);
+    let list = precedents;
+    if (ui.activeTagFilters.length > 0) {
+      list = list.filter((p) => p.tags.some((t) => ui.activeTagFilters.includes(t)));
+    }
+    const q = searchQuery.trim().toLowerCase();
+    if (q) {
+      list = list.filter(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.architect.toLowerCase().includes(q) ||
+          p.tags.some((t) => t.includes(q)),
+      );
+    }
+    return list;
+  }, [precedents, ui.activeTagFilters, searchQuery]);
 
   const influences = useMemo(() => precedents.filter((p) => p.isInfluence), [precedents]);
 
@@ -146,14 +160,24 @@ function AppShell() {
         <main className="flex-1 overflow-y-auto p-6">
           {activeView === "library" && (
             <section>
-              <div className="mb-3 flex items-center justify-between">
-                <h2 className="text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
+              <div className="mb-3 flex items-center justify-between gap-3">
+                <h2 className="shrink-0 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
                   Precedents
+                  <span className="ml-1.5 font-normal normal-case text-ink-tertiary">
+                    {visiblePrecedents.length} of {precedents.length}
+                  </span>
                 </h2>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search name, architect, or tag…"
+                  className="w-full max-w-xs rounded-md border border-hairline bg-surface-1 px-2.5 py-1.5 text-[12px] text-ink outline-none placeholder:text-ink-tertiary focus:border-primary"
+                />
                 <button
                   type="button"
                   onClick={() => setForm({ mode: "add" })}
-                  className="rounded-md border border-hairline-strong px-2.5 py-1 text-[11px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary"
+                  className="shrink-0 rounded-md border border-hairline-strong px-2.5 py-1 text-[11px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary"
                 >
                   + Add precedent
                 </button>
@@ -240,7 +264,7 @@ function AppShell() {
               <h2 className="mb-3 shrink-0 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
                 Connections
                 <span className="ml-2 font-normal normal-case text-ink-tertiary">
-                  shared tags link precedents to your project; influences always connect
+                  shared tags + confirmed influences
                 </span>
               </h2>
               <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-hairline bg-surface-1">

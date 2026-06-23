@@ -19,12 +19,22 @@ export interface Precedent {
   materialTextures?: Record<string, string>;
 }
 
+export interface SiteContext {
+  location: string;
+  orientation: string;
+  constraint: string;
+  // Set by the optional free climate lookup (Open-Meteo) — never required.
+  climateSummary?: string;
+  climateTags?: string[];
+}
+
 export interface Project {
   id: "project";
   title: string;
   summary: string;
   tags: string[];
   influenceIds: string[];
+  site?: SiteContext;
 }
 
 export interface AnalyseRecommendation {

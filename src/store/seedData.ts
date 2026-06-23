@@ -8,7 +8,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Mind West Gate Innovation Hub",
     architect: "OBR Architects",
     year: 2022,
-    demonstrates: "Milan, Italy",
+    demonstrates: "An open cube with full-height colonnades and a photovoltaic roof canopy is designed as a flexible, carbon-zero hub that listens to its users and adapts over time. (Milan, Italy)",
     tags: ["civic", "institutional", "glass", "steel"],
     swatches: [
       { hex: "#95ABB5", label: "", sourceId: "obr-mind-west-gate" },
@@ -27,7 +27,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Fundamental — Children's Playschool (Amsterdam International Competition)",
     architect: "Gautier Rey",
     year: 2016,
-    demonstrates: "Amsterdam, Netherlands",
+    demonstrates: "A linear kindergarten on a peninsula uses a double-skin facade to mediate between formal classrooms and informal play, keeping the site open, flexible and permeable. (Amsterdam, Netherlands)",
     tags: ["educational", "civic"],
     swatches: [
       { hex: "#E7D9CE", label: "", sourceId: "gautier-rey-fundamental" },
@@ -46,7 +46,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Youth Center",
     architect: "RAAMWERK",
     year: 2016,
-    demonstrates: "Lichtervelde, Belgium",
+    demonstrates: "Exposed brick volumes are arranged around two exterior chambers to create a layered, theatre-like youth centre where residents can both observe and be observed. (Lichtervelde, Belgium)",
     tags: ["educational", "civic", "brick", "concrete"],
     swatches: [
       { hex: "#D68A9A", label: "", sourceId: "raamwerk-youth-center" },
@@ -65,7 +65,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Cantine d'Assouindé",
     architect: "Cécile-Diama Samb, Angelo Renna",
     year: 2017,
-    demonstrates: "Assouindé, Côte d'Ivoire",
+    demonstrates: "A single roof shelters a dining hall and kitchen built with local construction methods, doubling as a communal gathering space for the village. (Assouindé, Côte d'Ivoire)",
     tags: ["civic", "educational"],
     swatches: [
       { hex: "#E2E1D4", label: "", sourceId: "cantine-d-assouinde" },
@@ -84,7 +84,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Restructuring of a Monumental Building, Via Azario",
     architect: "Giorgio Grassi",
     year: 1966,
-    demonstrates: "Pavia, Italy",
+    demonstrates: "A heritage courtyard renovation uses ashlar stone and white masonry against red-painted stairwells to resize circulation while preserving the protected facades. (Pavia, Italy)",
     tags: ["adaptive-reuse", "institutional", "civic"],
     swatches: [
       { hex: "#E6E2D9", label: "", sourceId: "grassi-pavia" },
@@ -103,7 +103,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "The Gyrasium — Sport Facilities",
     architect: "Jean-Baptiste de Boisseson",
     year: 2016,
-    demonstrates: "Paris, France",
+    demonstrates: "A multi-functional playground reuses the leftover land of an ordinary roundabout, turning under-used infrastructure into open, informal public sports space. (Paris, France)",
     tags: ["civic", "public-ground"],
     swatches: [
       { hex: "#EADAA2", label: "", sourceId: "gyrasium-sport" },
@@ -122,7 +122,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Entre deux Ponts",
     architect: "Francesco Nicolai",
     year: 2016,
-    demonstrates: "Brussels, Belgium",
+    demonstrates: "A long, thin new building connects two existing height levels and an out-of-scale neighbour, acting as a transparent architectural promenade between them. (Brussels, Belgium)",
     tags: ["in-between", "threshold"],
     swatches: [
       { hex: "#B1A19E", label: "", sourceId: "entre-deux-ponts" },
@@ -141,7 +141,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Renaissance Piazza — Re-creation Centre, Lido Island (Venice International Competition)",
     architect: "Gautier Rey",
     year: 2016,
-    demonstrates: "Venice, Italy",
+    demonstrates: "A new horizontal volume reunites four separated heritage buildings into one cultural centre, minimising intervention while restoring civic clarity to the waterfront. (Venice, Italy)",
     tags: ["civic", "public-ground"],
     swatches: [
       { hex: "#EDF1DB", label: "", sourceId: "renaissance-piazza" },
@@ -160,7 +160,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Sorrento House",
     architect: "Victoria Merrett",
     year: 2026,
-    demonstrates: "Sorrento, Mornington Peninsula, Australia",
+    demonstrates: "Colorbond roofing, recycled brick and timber shiplap are assembled with restraint so the house aligns with, rather than imposes on, its suburban street. (Sorrento, Mornington Peninsula, Australia)",
     tags: ["domestic", "coast", "timber", "stone", "steel"],
     swatches: [
       { hex: "#807665", label: "", sourceId: "sorrento-house" },
@@ -179,7 +179,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Ironbark House",
     architect: "Not All Architecture",
     year: 2025,
-    demonstrates: "South-West Coast, Australia",
+    demonstrates: "Inspired by Utzon's additive architecture, repeated bays of dense ironbark cladding and galvanised steel step across the site's contours to shelter a family from coastal extremes. (South-West Coast, Australia)",
     tags: ["domestic", "timber", "coast", "steel"],
     swatches: [
       { hex: "#F4F2F0", label: "", sourceId: "ironbark-house" },
@@ -198,7 +198,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Stuartholme House",
     architect: "NIELSEN JENKINS, Michael Lumby",
     year: 2025,
-    demonstrates: "Brisbane, Australia",
+    demonstrates: "A new lounge and bedroom suite is sunk slightly into the hillside to frame a private courtyard, balancing bushfire-rated glazing with a deliberate sense of refuge. (Brisbane, Australia)",
     tags: ["domestic", "brick"],
     swatches: [
       { hex: "#1D230C", label: "", sourceId: "stuartholme-house" },
@@ -217,7 +217,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Egerton Street House",
     architect: "JULIAN LEGG",
     year: 2025,
-    demonstrates: "Blairgowrie, Australia",
+    demonstrates: "Robust masonry volumes and delicate timber screens combine to give the coastal home privacy from the street while still drawing light deep into the interior. (Blairgowrie, Australia)",
     tags: ["domestic", "coast", "timber", "stone"],
     swatches: [
       { hex: "#9D8E6F", label: "", sourceId: "egerton-street-house" },
@@ -236,7 +236,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "House Shaped House",
     architect: "Atelier of Spatial Matters",
     year: 2025,
-    demonstrates: "Singapore",
+    demonstrates: "A mesh facade abstracts a Singapore bungalow into a white box, exposing domestic infrastructure as sculptural monoliths that organise the plan. (Singapore)",
     tags: ["domestic"],
     swatches: [
       { hex: "#F1F1EE", label: "", sourceId: "house-shaped-house" },
@@ -255,7 +255,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Barba Jupiter",
     architect: "GÉOMÉTRAL",
     year: 2024,
-    demonstrates: "Porquerolles Island, France",
+    demonstrates: "A strictly linear plan of stone walls, deep overhanging roofs and ventilating arches opens every room to the Atlantic horizon, drawing on Mediterranean archetypes. (Porquerolles Island, France)",
     tags: ["domestic", "coast"],
     swatches: [
       { hex: "#FDE456", label: "", sourceId: "barba-jupiter" },
@@ -274,7 +274,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "House with Three Gestures",
     architect: "Fala Atelier",
     year: 2021,
-    demonstrates: "Porto, Portugal",
+    demonstrates: "Denied a construction permit, the project is given away for free in full, in case someone else wants to build its unconditional charisma elsewhere. (Porto, Portugal)",
     tags: ["domestic", "sequence"],
     swatches: [
       { hex: "#31575E", label: "", sourceId: "house-three-gestures" },
@@ -293,7 +293,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "050 WW — Future Living Space",
     architect: "Operadora",
     year: 2018,
-    demonstrates: "Shanghai, China",
+    demonstrates: "Rather than design a house, the project proposes a digital platform letting inhabitants actively shape and adapt pre-existing housing structures themselves. (Shanghai, China)",
     tags: ["domestic"],
     swatches: [
       { hex: "#5E99CA", label: "", sourceId: "future-living-space" },
@@ -312,7 +312,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Three Brothers for Spania Dolina",
     architect: "Marek Nedelka",
     year: 2015,
-    demonstrates: "Spania Dolina, Slovakia",
+    demonstrates: "Three small black-shingled buildings — a spa, a lodge and a bunkhouse — share one construction grid to reconnect an old mining village to active tourism. (Spania Dolina, Slovakia)",
     tags: ["domestic", "topography"],
     swatches: [
       { hex: "#FFFFFF", label: "", sourceId: "three-brothers-spania-dolina" },
@@ -331,7 +331,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "\"Morella\", 5 Morella Rd, Mosman",
     architect: "SUPERCONTEXT",
     year: 2016,
-    demonstrates: "Sydney, Australia",
+    demonstrates: "A restoration and lightweight garden pavilion addition is conceived as deliberately voiceless, deferring entirely to the historic mansion's existing architectural language. (Sydney, Australia)",
     tags: ["domestic", "stone", "brick"],
     swatches: [
       { hex: "#92918F", label: "", sourceId: "morella-mosman" },
@@ -350,7 +350,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Lilyfield House",
     architect: "SUPERCONTEXT",
     year: 2016,
-    demonstrates: "Sydney, Australia",
+    demonstrates: "Lateral structural walls run the length of the house, opening side and rear walls to courtyards so timber screens and voids drive natural cross-ventilation. (Sydney, Australia)",
     tags: ["domestic", "timber", "brick"],
     swatches: [
       { hex: "#CFDADF", label: "", sourceId: "lilyfield-house" },
@@ -369,7 +369,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "SPOOR",
     architect: "UNO8A",
     year: 2016,
-    demonstrates: "Bologna, Italy",
+    demonstrates: "The building's own shape becomes the generative device that will trigger and host future extensions grafted onto it. (Bologna, Italy)",
     tags: ["concrete"],
     swatches: [
       { hex: "#406CB0", label: "", sourceId: "uno8a-spoor" },
@@ -388,7 +388,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Museo",
     architect: "Motoproprio",
     year: 2015,
-    demonstrates: "Stockholm, Sweden",
+    demonstrates: "An enfilade of sculptural volumes forms a chronological exhibition path, treating the museum itself as a civic monument and screen for the city. (Stockholm, Sweden)",
     tags: ["cultural"],
     swatches: [
       { hex: "#D7E0D9", label: "", sourceId: "motoproprio-museo" },
@@ -407,7 +407,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Make Your Mark in Milan",
     architect: "JAS — just another story",
     year: 2014,
-    demonstrates: "Milano, Italy",
+    demonstrates: "The project takes its cue from the layered meanings of 'fair' — market, charity sale, exhibition, and commotion — as a framework for a temporary urban event. (Milano, Italy)",
     tags: ["public-ground"],
     swatches: [
       { hex: "#C9E8E7", label: "", sourceId: "mym-make-your-mark-milan" },
@@ -426,7 +426,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Museo Nacional de Afganistán",
     architect: "AV62 Arquitectos",
     year: 2012,
-    demonstrates: "Kabul, Afghanistan",
+    demonstrates: "Vaulted, deformable spaces echo the Mosque of Córdoba to create a flexible national museum balancing physical shelter with cultural and intellectual exchange. (Kabul, Afghanistan)",
     tags: ["cultural", "institutional", "rammed-earth"],
     swatches: [
       { hex: "#C8C9BD", label: "", sourceId: "museo-nacional-afganistan" },
@@ -445,7 +445,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Landesmuseum",
     architect: "Paredes Pedrosa Arquitectos",
     year: 2002,
-    demonstrates: "Zurich, Switzerland",
+    demonstrates: "New and old volumes form a loose-fitting unit linked by open space, slipping museum offices beneath the courtyard and public functions into a riverside pavilion. (Zurich, Switzerland)",
     tags: ["cultural", "institutional", "stone"],
     swatches: [
       { hex: "#EDECEB", label: "", sourceId: "landesmuseum-zurich" },
@@ -464,7 +464,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Liget Budapest Museums",
     architect: "IaN+",
     year: 2014,
-    demonstrates: "Budapest, Hungary",
+    demonstrates: "Two museums share one perforated grid of walls, using cut-out patios and water surfaces to dissolve the boundary between landscape, city and exhibition space. (Budapest, Hungary)",
     tags: ["cultural", "institutional", "public-ground", "concrete", "steel"],
     swatches: [
       { hex: "#C8C7BE", label: "", sourceId: "liget-budapest-museums" },
@@ -483,7 +483,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Guggenheim Helsinki Design Competition",
     architect: "Gosplan, Francesco Librizzi, Raffaella Parodi, Valter Scelsi",
     year: 2014,
-    demonstrates: "Helsinki, Finland",
+    demonstrates: "Wood, brick and steel compose an essential material palette that reads the historic waterfront city as the basis for the museum's elemental forms. (Helsinki, Finland)",
     tags: ["cultural", "institutional", "brick"],
     swatches: [
       { hex: "#ECE9DC", label: "", sourceId: "guggenheim-helsinki" },
@@ -502,7 +502,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Renovation and Extension of a Public Swimming Pool in Brittany",
     architect: "RAUM",
     year: 2022,
-    demonstrates: "Saint-Méen-le-Grand, France",
+    demonstrates: "A black timber skin wraps and insulates the rehabilitated pool cluster, floating a new covered volume above the water while respecting the existing heritage structures. (Saint-Méen-le-Grand, France)",
     tags: ["civic", "adaptive-reuse", "water", "timber", "ceramic"],
     swatches: [
       { hex: "#B18C75", label: "", sourceId: "public-pool-brittany" },
@@ -521,7 +521,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Servìn le Vert — The Environmentally-Sustainable-Man",
     architect: "Beniamino Servino",
     year: 2009,
-    demonstrates: "Caserta, Italy",
+    demonstrates: "The project operates as a graphic and philosophical manifesto exploring human scale against sustainable architecture and landscapes of abandonment. (Caserta, Italy)",
     tags: ["vegetation", "landscape"],
     swatches: [
       { hex: "#5B732C", label: "", sourceId: "servin-le-vert" },
@@ -540,7 +540,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Pink Mammals",
     architect: "Angelo Renna, Fabulism",
     year: 2015,
-    demonstrates: "Kruger Park, South Africa",
+    demonstrates: "An elevated path lets a wildlife reserve remain self-limiting, with rain-collecting 'pink mammal' forms growing to support water, fire and food needs for the park. (Kruger Park, South Africa)",
     tags: ["landscape"],
     swatches: [
       { hex: "#CAB965", label: "", sourceId: "pink-mammals" },
@@ -559,7 +559,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Altagether",
     architect: "Fabulism",
     year: 2017,
-    demonstrates: "Alta, Norway",
+    demonstrates: "Flexible, vernacular-inspired structures act as growable, dissolvable activators across the Arctic town, replacing solid production with adaptive social infrastructure. (Alta, Norway)",
     tags: ["coast"],
     swatches: [
       { hex: "#3D5962", label: "", sourceId: "altagether-alta" },
@@ -578,7 +578,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Blueprint Genova — Riqualificazione del Porto di Genova (Progetto Ammesso)",
     architect: "Rrs-studio",
     year: 2016,
-    demonstrates: "Genova, Italy",
+    demonstrates: "A repeated modular cell generates a long waterfront frontage, keeping each building legible at human scale while the harbour promenade ties commerce to the working port. (Genova, Italy)",
     tags: ["civic", "public-ground", "coast", "concrete", "timber", "glass"],
     swatches: [
       { hex: "#C7C6CF", label: "", sourceId: "blueprint-genova-porto" },
@@ -597,7 +597,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Blueprint Competition",
     architect: "Gosplan, pia, UNO8A, False Mirror Office",
     year: 2016,
-    demonstrates: "Genova, Italy",
+    demonstrates: "A blank existing pavilion is given a new public-facing facade, opening a planned canal to view and threading residential volumes around it. (Genova, Italy)",
     tags: ["civic", "public-ground", "coast", "concrete", "steel"],
     swatches: [
       { hex: "#A1A19E", label: "", sourceId: "blueprint-genova-competition" },
@@ -616,7 +616,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "15m North Park",
     architect: "De Gayardon Bureau",
     year: 2013,
-    demonstrates: "Gabicce Mare, Marche, Italy",
+    demonstrates: "One continuous waterfront park stitches the city and beach together along the coastline, treating Gabicce's public space as its primary touristic asset. (Gabicce Mare, Marche, Italy)",
     tags: ["public-ground", "coast", "landscape"],
     swatches: [
       { hex: "#0A2F09", label: "", sourceId: "15m-north-park" },
@@ -635,7 +635,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Phisyopolis",
     architect: "CIRCOLO-A, LINEARAMA",
     year: 2016,
-    demonstrates: "Marsala, Italy",
+    demonstrates: "A Roman decumanus maximus is reinterpreted as the spine linking simple contemporary structures to archaeological remains across the park. (Marsala, Italy)",
     tags: [],
     swatches: [
       { hex: "#ECEFF4", label: "", sourceId: "phisyopolis-marsala" },
@@ -654,7 +654,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Agora 2.0 Library",
     architect: "Jean-Baptiste de Boisseson",
     year: 2014,
-    demonstrates: "Copenhagen, Denmark",
+    demonstrates: "A traditional cylindrical book reserve is paired with an open 'library 2.0', translating the tension between print tradition and digital culture into two linked volumes. (Copenhagen, Denmark)",
     tags: ["educational", "cultural", "public-ground", "civic", "glass"],
     swatches: [
       { hex: "#EBEBEB", label: "", sourceId: "agora-library-copenhagen" },
@@ -673,7 +673,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Children's Home Center",
     architect: "Pontoatelier",
     year: 2018,
-    demonstrates: "Funchal, Portugal",
+    demonstrates: "A two-level central garden facing the sea anchors an intimate, homely atmosphere throughout the children's home's interior. (Funchal, Portugal)",
     tags: ["educational", "domestic", "coast", "concrete", "timber"],
     swatches: [
       { hex: "#EAE3E0", label: "", sourceId: "childrens-home-funchal" },
@@ -692,7 +692,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Lurago d'Erba Kindergarten",
     architect: "Motoproprio",
     year: 2018,
-    demonstrates: "Lurago d'Erba, Italy",
+    demonstrates: "Simple, colourful volumes are organised in stripes of play, service and teaching space, with movable furniture letting all five classrooms merge into one continuous room. (Lurago d'Erba, Italy)",
     tags: ["educational"],
     swatches: [
       { hex: "#CEDDE4", label: "", sourceId: "lurago-derba-kindergarten" },
@@ -711,7 +711,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Kindergarten",
     architect: "KONNTRA",
     year: 2018,
-    demonstrates: "Zagreb, Croatia",
+    demonstrates: "Citing Calvino's idea that every life is an encyclopedia of experience, the kindergarten is designed to give children space for critical thinking rather than strict upbringing. (Zagreb, Croatia)",
     tags: ["educational", "timber"],
     swatches: [
       { hex: "#EAF7FD", label: "", sourceId: "konntra-kindergarten" },
@@ -730,7 +730,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "ECLA",
     architect: "Giovanna Cavalli",
     year: 2015,
-    demonstrates: "London, United Kingdom",
+    demonstrates: "Echoing the same Calvino-inspired brief as Konntra, the design treats the early-years environment as formative architecture shaping a child's thinking and mood. (London, United Kingdom)",
     tags: ["educational", "timber", "glass"],
     swatches: [
       { hex: "#BDA680", label: "", sourceId: "ecla-london" },
@@ -749,7 +749,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "London Nursery School",
     architect: "Mattia Grilli",
     year: 2015,
-    demonstrates: "Greenwich, London, United Kingdom",
+    demonstrates: "A small nursery school in Greenwich, London — no further design statement was published by the architect. (Greenwich, London, United Kingdom)",
     tags: ["educational", "timber"],
     swatches: [
       { hex: "#F9FAFB", label: "", sourceId: "london-nursery-school" },
@@ -768,7 +768,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Bludoteca",
     architect: "A2BC — Anna Angelelli, Antonio Bergamasco, Michela Cicuto",
     year: 2014,
-    demonstrates: "Milano, Italy",
+    demonstrates: "Conceived as a 'folly', the pavilion plays uselessness against utility to reinterpret a decorative typology as a socially useful children's space. (Milano, Italy)",
     tags: ["educational"],
     swatches: [
       { hex: "#02A1F3", label: "", sourceId: "bludoteca-milano" },
@@ -787,7 +787,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Ludoteca Padiglione Infanzia",
     architect: "STARTT",
     year: 2014,
-    demonstrates: "Milano, Italy",
+    demonstrates: "A daycare wedged between tower blocks turns its site constraints into a sequence of synesthetic outdoor rooms, opening fully to the park through a totally openable fence. (Milano, Italy)",
     tags: ["educational", "civic", "ceramic", "timber"],
     swatches: [
       { hex: "#E0DFD6", label: "", sourceId: "ludoteca-padiglione-infanzia" },
@@ -806,7 +806,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "La Corrèze — Sharing Islands (E13 Winner)",
     architect: "ARCHIPEL — Association d'Architectes",
     year: 2015,
-    demonstrates: "Ussel, Argentat, Turenne, France",
+    demonstrates: "Responding to rural car-dependency, the project reimagines housing around sharing and a citizen-centred approach rather than standardised, isolated living. (Ussel, Argentat, Turenne, France)",
     tags: ["public-ground", "water", "brick"],
     swatches: [
       { hex: "#7F8F71", label: "", sourceId: "correze-sharing-islands" },
@@ -825,7 +825,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "The Candy Shop",
     architect: "Traumnovelle",
     year: 2016,
-    demonstrates: "Brussels, Belgium",
+    demonstrates: "Domestic archetypes are gender-inverted and exaggerated to expose and critique the power relations embedded in conventional household space. (Brussels, Belgium)",
     tags: [],
     swatches: [
       { hex: "#0C0C0C", label: "", sourceId: "candy-shop-brussels" },
@@ -844,7 +844,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Interior/Exterior",
     architect: "Espacio Cero",
     year: 2014,
-    demonstrates: "Mexico City, Mexico",
+    demonstrates: "Three short provocations — an open-air chapel, a framed sky gallery, and an underground government building — each turn a civic void into public artwork. (Mexico City, Mexico)",
     tags: ["domestic", "boundary", "threshold"],
     swatches: [
       { hex: "#8DA57C", label: "", sourceId: "interior-exterior-mexico" },
@@ -863,7 +863,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Qianhai Monument Landscape Island",
     architect: "Viar Estudio",
     year: 2014,
-    demonstrates: "Shenzen, China",
+    demonstrates: "Two parks are layered five metres apart, with elevated circular walkways letting visitors choose between sea views, sport, and a sheltered ground-level garden. (Shenzen, China)",
     tags: ["memorial", "public-ground", "landscape", "coast"],
     swatches: [
       { hex: "#7D2424", label: "", sourceId: "qianhai-monument-shenzen" },
@@ -882,7 +882,7 @@ export const SEED_PRECEDENTS: Precedent[] = [
     name: "Lady Raval Social Housing",
     architect: "MIAS Architects",
     year: 2025,
-    demonstrates: "Barcelona, Spain",
+    demonstrates: "A rehabilitated tenement reopens its central courtyard as a communal canvas, using ceramic cladding patterned on residents' cultural heritage to express the building's multicultural community. (Barcelona, Spain)",
     tags: ["domestic", "civic", "ceramic", "brick"],
     swatches: [
       { hex: "#CB6A63", label: "", sourceId: "lady-raval-housing" },

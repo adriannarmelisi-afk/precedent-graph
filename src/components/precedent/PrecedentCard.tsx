@@ -99,11 +99,18 @@ export function PrecedentCard({
           <span
             role="checkbox"
             aria-checked={isInfluence}
+            tabIndex={0}
             onClick={(e) => {
               e.stopPropagation();
               onToggleInfluence(id, !isInfluence);
             }}
-            className={`cursor-pointer rounded px-2 py-0.5 text-[10px] font-medium transition-colors ${
+            onKeyDown={(e) => {
+              if (e.key !== "Enter" && e.key !== " ") return;
+              e.preventDefault();
+              e.stopPropagation();
+              onToggleInfluence(id, !isInfluence);
+            }}
+            className={`cursor-pointer rounded px-2 py-0.5 text-[10px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary ${
               isInfluence
                 ? "bg-primary text-on-primary"
                 : "border border-hairline-strong text-ink-subtle hover:border-primary hover:text-primary"

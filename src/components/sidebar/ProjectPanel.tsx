@@ -3,6 +3,10 @@ import { useStore } from "../../store/appStore";
 import { updateProject } from "../../store/actions";
 import { normaliseTags, suggestTagsFromText } from "../../utils/tagUtils";
 import { TagInput } from "./TagInput";
+import { ImportConceptPanel } from "./ImportConceptPanel";
+import { fetchClimateForLocation } from "../../utils/climateUtils";
+
+type ClimateStatus = { kind: "idle" | "loading" | "ok" | "error"; message?: string };
 
 export function ProjectPanel({ onAnalyse }: { onAnalyse?: () => void }) {
   const { state, dispatch } = useStore();
@@ -11,10 +15,37 @@ export function ProjectPanel({ onAnalyse }: { onAnalyse?: () => void }) {
   const isEmpty = !project.title && !project.summary && project.tags.length === 0;
   const [editing, setEditing] = useState(isEmpty);
   const [suggested, setSuggested] = useState<string[] | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [climateStatus, setClimateStatus] = useState<ClimateStatus>({ kind: "idle" });
+
+  const site = project.site ?? { location: "", orientation: "", constraint: "" };
+  const updateSite = (changes: Partial<typeof site>) =>
+    dispatch(updateProject({ site: { ...site, ...changes } }));
+
+  const runClimateLookup = async () => {
+    if (!site.location.trim()) return;
+    setClimateStatus({ kind: "loading" });
+    try {
+      const result = await fetchClimateForLocation(site.location);
+      if (!result) {
+        setClimateStatus({ kind: "error", message: "Couldn't find that location — try a nearby city or suburb." });
+        return;
+      }
+      updateSite({ climateSummary: result.summary, climateTags: result.tags });
+      setClimateStatus({ kind: "ok" });
+    } catch {
+      setClimateStatus({ kind: "error", message: "Lookup failed — check your connection." });
+    }
+  };
 
   const runSuggest = () => {
-    const hits = suggestTagsFromText(project.summary).filter((t) => !project.tags.includes(t));
-    setSuggested(hits);
+    const combinedText = [project.summary, site.location, site.orientation, site.constraint].join(
+      " ",
+    );
+    const hits = suggestTagsFromText(combinedText)
+      .concat(site.climateTags ?? [])
+      .filter((t) => !project.tags.includes(t));
+    setSuggested(Array.from(new Set(hits)));
   };
 
   const acceptTag = (tag: string) => {
@@ -44,14 +75,25 @@ export function ProjectPanel({ onAnalyse }: { onAnalyse?: () => void }) {
             </p>
           </div>
         </div>
-        <button
-          type="button"
-          onClick={() => setEditing((e) => !e)}
-          className="rounded-md border border-hairline-strong px-2.5 py-1 text-[11px] text-ink-subtle transition-colors hover:border-primary hover:text-primary"
-        >
-          {editing ? "Done" : "Edit"}
-        </button>
+        <div className="flex shrink-0 gap-2">
+          <button
+            type="button"
+            onClick={() => setImportOpen(true)}
+            className="rounded-md border border-hairline-strong px-2.5 py-1 text-[11px] text-ink-subtle transition-colors hover:border-primary hover:text-primary"
+          >
+            Import
+          </button>
+          <button
+            type="button"
+            onClick={() => setEditing((e) => !e)}
+            className="rounded-md border border-hairline-strong px-2.5 py-1 text-[11px] text-ink-subtle transition-colors hover:border-primary hover:text-primary"
+          >
+            {editing ? "Done" : "Edit"}
+          </button>
+        </div>
       </div>
+
+      {importOpen && <ImportConceptPanel onClose={() => setImportOpen(false)} />}
 
       {editing ? (
         <div className="flex flex-col gap-4">
@@ -78,6 +120,67 @@ export function ProjectPanel({ onAnalyse }: { onAnalyse?: () => void }) {
               placeholder="What is your project about? Paste or refine the concept statement from your Conceptassistant brief…"
               className="w-full resize-y rounded-md border border-hairline bg-surface-1 px-2.5 py-2 text-[13px] leading-relaxed text-ink outline-none placeholder:text-ink-tertiary focus:border-primary"
             />
+          </div>
+
+          <div>
+            <label className="mb-1 block text-[10px] font-medium uppercase tracking-wide text-ink-tertiary">
+              Site
+              <span className="ml-1.5 font-normal normal-case">
+                — optional, but sharpens tag suggestions and Analyse (e.g. a coastal site surfaces
+                coastal precedents)
+              </span>
+            </label>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="flex gap-1.5">
+                <input
+                  value={site.location}
+                  onChange={(e) => updateSite({ location: e.target.value })}
+                  placeholder="Location, e.g. Bondi, coastal"
+                  className="w-full rounded-md border border-hairline bg-surface-1 px-2.5 py-1.5 text-[12px] text-ink outline-none placeholder:text-ink-tertiary focus:border-primary"
+                />
+                <button
+                  type="button"
+                  onClick={runClimateLookup}
+                  disabled={climateStatus.kind === "loading" || !site.location.trim()}
+                  title="Free climate lookup (Open-Meteo) — no key, no account"
+                  className="shrink-0 rounded-md border border-hairline-strong px-2 text-[11px] text-ink-subtle transition-colors hover:border-primary hover:text-primary disabled:opacity-40"
+                >
+                  {climateStatus.kind === "loading" ? "…" : "☀ Climate"}
+                </button>
+              </div>
+              <input
+                value={site.orientation}
+                onChange={(e) => updateSite({ orientation: e.target.value })}
+                placeholder="Orientation, e.g. north-facing slope"
+                className="w-full rounded-md border border-hairline bg-surface-1 px-2.5 py-1.5 text-[12px] text-ink outline-none placeholder:text-ink-tertiary focus:border-primary"
+              />
+            </div>
+            <input
+              value={site.constraint}
+              onChange={(e) => updateSite({ constraint: e.target.value })}
+              placeholder="Key constraint, e.g. heritage facade, steep topography"
+              className="mt-2 w-full rounded-md border border-hairline bg-surface-1 px-2.5 py-1.5 text-[12px] text-ink outline-none placeholder:text-ink-tertiary focus:border-primary"
+            />
+            {climateStatus.kind === "error" && (
+              <p className="mt-1 text-[11px] text-primary">{climateStatus.message}</p>
+            )}
+            {site.climateSummary && (
+              <div className="mt-2 rounded-md border border-hairline bg-surface-2 p-2">
+                <p className="text-[11px] text-ink-subtle">{site.climateSummary}</p>
+                {(site.climateTags?.length ?? 0) > 0 && (
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {site.climateTags!.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-medium text-primary"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
           </div>
 
           <div>
@@ -154,6 +257,11 @@ export function ProjectPanel({ onAnalyse }: { onAnalyse?: () => void }) {
           ) : (
             <p className="text-[13px] italic text-ink-tertiary">
               No concept summary yet — click Edit to add yours.
+            </p>
+          )}
+          {(site.location || site.orientation || site.constraint) && (
+            <p className="text-[12px] text-ink-tertiary">
+              {[site.location, site.orientation, site.constraint].filter(Boolean).join(" · ")}
             </p>
           )}
           {project.tags.length > 0 && (

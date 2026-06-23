@@ -94,6 +94,11 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
               If a pasted image URL won't load (some sites block this), try "Upload image instead"
               — it always works.
             </li>
+            <li>
+              The "☀ Climate" button on Project looks up real climate data for your site —
+              free, no account, no key (Open-Meteo + OpenStreetMap). It nudges tag suggestions
+              and Analyse, never decides anything for you.
+            </li>
           </ul>
         </section>
       </div>

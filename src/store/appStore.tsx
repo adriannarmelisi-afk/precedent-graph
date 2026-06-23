@@ -6,7 +6,14 @@ import { SEED_PRECEDENTS } from "./seedData";
 const STORAGE_KEY = "precedent-graph-v1";
 
 function blankProject(): AppState["project"] {
-  return { id: "project", title: "", summary: "", tags: [], influenceIds: [] };
+  return {
+    id: "project",
+    title: "",
+    summary: "",
+    tags: [],
+    influenceIds: [],
+    site: { location: "", orientation: "", constraint: "" },
+  };
 }
 
 function blankUi(): AppState["ui"] {
