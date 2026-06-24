@@ -12,7 +12,10 @@ import { NavSidebar, type AppView } from "./components/nav/NavSidebar";
 import { getMaterialTags } from "./utils/materialUtils";
 import {
   deletePrecedent,
+  deleteProjectSnapshot,
+  resetProject,
   saveNodePosition,
+  saveProjectSnapshot,
   setAnalyseResult,
   setSelected,
   setTagFilters,
@@ -24,7 +27,7 @@ import { StoreProvider, useStore } from "./store/appStore";
 import { useGraph } from "./hooks/useGraph";
 import { usePalette } from "./hooks/usePalette";
 import { useMaterialPalette } from "./hooks/useMaterialPalette";
-import { allTagsInUse } from "./utils/tagUtils";
+import { allTagsInUse, tagAccentColour } from "./utils/tagUtils";
 import { analyseInfluences } from "./utils/analyseInfluences";
 
 function AppShell() {
@@ -52,6 +55,25 @@ function AppShell() {
       ? current.filter((h) => h.toLowerCase() !== key)
       : [...current, hex];
     dispatch(updateProject({ chosenSwatchHexes: next }));
+  };
+
+  const handleSaveProject = () => {
+    dispatch(
+      saveProjectSnapshot({
+        id: crypto.randomUUID(),
+        title: project.title || "Untitled project",
+        summary: project.summary,
+        tags: project.tags,
+        chosenSwatches: chosenSwatches.map((s) => ({ hex: s.hex, label: s.label })),
+        savedAt: new Date().toISOString(),
+      }),
+    );
+  };
+
+  const handleNewProject = () => {
+    if (confirm("Start a new project? This clears the current title, summary, tags, and palette — save it first if you want to keep it.")) {
+      dispatch(resetProject());
+    }
   };
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -249,14 +271,55 @@ function AppShell() {
                 </div>
               )}
 
+              {taggedGroups && (
+                <div className="sticky top-0 z-10 mb-5 flex flex-wrap gap-1.5 bg-canvas py-2">
+                  {taggedGroups.groups.map(({ tag, members }) => (
+                    <a
+                      key={tag}
+                      href={`#group-${tag}`}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        document.getElementById(`group-${tag}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
+                      style={{ borderColor: tagAccentColour(tag), color: tagAccentColour(tag) }}
+                      className="rounded-full border px-2.5 py-1 text-[11px] font-medium transition-colors hover:opacity-75"
+                    >
+                      {tag} · {members.length}
+                    </a>
+                  ))}
+                  {taggedGroups.others.length > 0 && (
+                    <a
+                      href="#group-others"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        document.getElementById("group-others")?.scrollIntoView({ behavior: "smooth", block: "start" });
+                      }}
+                      className="rounded-full border border-hairline-strong px-2.5 py-1 text-[11px] font-medium text-ink-tertiary transition-colors hover:border-primary hover:text-primary"
+                    >
+                      Others · {taggedGroups.others.length}
+                    </a>
+                  )}
+                </div>
+              )}
+
               {taggedGroups ? (
                 <div className="flex flex-col gap-7">
                   {taggedGroups.groups.map(({ tag, members }) => (
-                    <div key={tag}>
-                      <h3 className="mb-3 text-[11px] font-medium uppercase tracking-wide text-primary">
-                        {tag}
-                        <span className="ml-1.5 font-normal normal-case text-ink-tertiary">
-                          {members.length} match{members.length === 1 ? "" : "es"}
+                    <div
+                      key={tag}
+                      id={`group-${tag}`}
+                      className="scroll-mt-3 rounded-md border-l-4 pl-4"
+                      style={{ borderColor: tagAccentColour(tag) }}
+                    >
+                      <h3 className="mb-3 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide">
+                        <span
+                          className="rounded-full px-2.5 py-0.5 text-[11px] font-semibold text-white"
+                          style={{ backgroundColor: tagAccentColour(tag) }}
+                        >
+                          {tag}
+                        </span>
+                        <span className="font-normal normal-case text-ink-tertiary">
+                          {members.length} match{members.length === 1 ? "" : "es"} — relates to your concept
                         </span>
                       </h3>
                       <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
@@ -275,11 +338,16 @@ function AppShell() {
                   ))}
 
                   {taggedGroups.others.length > 0 && (
-                    <div>
-                      <h3 className="mb-3 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
-                        Others
-                        <span className="ml-1.5 font-normal normal-case text-ink-tertiary">
-                          no overlap with your concept tags
+                    <div
+                      id="group-others"
+                      className="scroll-mt-3 rounded-md border-l-4 border-hairline-strong bg-surface-2 pl-4 pt-1"
+                    >
+                      <h3 className="mb-3 flex items-center gap-2 text-[11px] font-medium uppercase tracking-wide">
+                        <span className="rounded-full border border-hairline-strong px-2.5 py-0.5 text-[11px] font-semibold text-ink-subtle">
+                          Others
+                        </span>
+                        <span className="font-normal normal-case text-ink-tertiary">
+                          {taggedGroups.others.length} precedent{taggedGroups.others.length === 1 ? "" : "s"} — no overlap with your concept tags
                         </span>
                       </h3>
                       <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
@@ -327,54 +395,85 @@ function AppShell() {
                 </p>
               )}
 
-              <div className="rounded-lg border-2 border-primary bg-surface-1 p-5">
-                <h3 className="mb-1 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
-                  Your drawing palette
-                  <span className="ml-1.5 font-normal normal-case">
-                    {chosenSwatches.length} colours starred for your own graphics
-                  </span>
-                </h3>
-                {chosenSwatches.length === 0 ? (
-                  <p className="text-[12px] leading-relaxed text-ink-tertiary">
-                    Star colours below to build the specific set you'll actually use in your drawings —
-                    separate from the full extracted palette.
-                  </p>
-                ) : (
-                  <div className="mt-2 flex flex-col gap-3">
-                    {chosenSwatches.map((entry, i) => (
-                      <SwatchChip
-                        key={entry.hex + i}
-                        entry={entry}
-                        chosen
-                        onToggleChosen={toggleChosenSwatch}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
+              <button
+                type="button"
+                onClick={() => setActiveView("library")}
+                className="flex items-center gap-1.5 self-start rounded-md border border-hairline-strong px-3 py-1.5 text-[12px] text-ink-subtle transition-colors hover:border-primary hover:text-primary"
+              >
+                ✦ Star colours in the Library's sidebar to build your drawing palette
+                <span aria-hidden="true">→</span>
+              </button>
 
-              <div className="rounded-lg border border-hairline bg-surface-1 p-5">
-                <h3 className="mb-3 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
-                  Combined palette
-                  <span className="ml-1.5 font-normal normal-case">
-                    {palette.length} colours, all influences — click a swatch or hex to copy, star to
-                    add to your drawing palette
-                  </span>
-                </h3>
-                {palette.length === 0 ? (
+              <div className="rounded-lg border-2 border-primary bg-surface-1 p-5">
+                <div className="mb-3 flex items-center justify-between gap-3">
+                  <h3 className="text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
+                    Saved projects
+                    <span className="ml-1.5 font-normal normal-case">
+                      {state.savedProjects.length} saved — each keeps its own concept tags + colours
+                    </span>
+                  </h3>
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      type="button"
+                      onClick={handleSaveProject}
+                      disabled={!project.title && !project.summary && project.tags.length === 0}
+                      className="rounded-md border border-hairline-strong px-2.5 py-1 text-[11px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary disabled:opacity-40"
+                    >
+                      Save project
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleNewProject}
+                      className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-on-primary transition-colors hover:bg-primary-hover"
+                    >
+                      + New project
+                    </button>
+                  </div>
+                </div>
+                {state.savedProjects.length === 0 ? (
                   <p className="text-[12px] leading-relaxed text-ink-tertiary">
-                    No influences yet — mark precedents as influences in the Library to build your
-                    project's palette.
+                    Click "Save project" to keep a record of this project's concept tags and colours
+                    before starting a new one — you can build up a library of past projects here.
                   </p>
                 ) : (
                   <div className="flex flex-col gap-3">
-                    {palette.map((entry, i) => (
-                      <SwatchChip
-                        key={entry.hex + i}
-                        entry={entry}
-                        chosen={chosenHexSet.has(entry.hex.toLowerCase())}
-                        onToggleChosen={toggleChosenSwatch}
-                      />
+                    {state.savedProjects.map((snap) => (
+                      <div key={snap.id} className="rounded-md border border-hairline bg-surface-2 p-3">
+                        <div className="mb-1.5 flex items-start justify-between gap-2">
+                          <h4 className="text-[12px] font-medium text-ink">{snap.title}</h4>
+                          <button
+                            type="button"
+                            onClick={() => dispatch(deleteProjectSnapshot(snap.id))}
+                            className="shrink-0 text-[11px] text-ink-tertiary underline hover:text-primary"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                        {snap.tags.length > 0 && (
+                          <div className="mb-2 flex flex-wrap gap-1">
+                            {snap.tags.map((tag) => (
+                              <span
+                                key={tag}
+                                className="rounded-full bg-primary-soft px-2 py-0.5 text-[10px] font-medium text-primary"
+                              >
+                                {tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                        {snap.chosenSwatches.length > 0 && (
+                          <div className="flex gap-1.5">
+                            {snap.chosenSwatches.map((s, i) => (
+                              <span
+                                key={s.hex + i}
+                                className="h-6 w-6 rounded border border-hairline"
+                                style={{ backgroundColor: s.hex }}
+                                title={`${s.label || s.hex}`}
+                              />
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     ))}
                   </div>
                 )}

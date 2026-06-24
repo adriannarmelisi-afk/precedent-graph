@@ -24,7 +24,8 @@ function loadInitialState(): AppState {
   const raw = localStorage.getItem(STORAGE_KEY);
   if (raw) {
     try {
-      return JSON.parse(raw) as AppState;
+      const parsed = JSON.parse(raw) as AppState;
+      return { savedProjects: [], ...parsed };
     } catch {
       // fall through to seed state if stored data is corrupt
     }
@@ -33,6 +34,7 @@ function loadInitialState(): AppState {
   return {
     precedents: SEED_PRECEDENTS,
     project: blankProject(),
+    savedProjects: [],
     ui: blankUi(),
     nodePositions: {},
   };
@@ -103,6 +105,15 @@ function reducer(state: AppState, action: Action): AppState {
         nodePositions: { ...state.nodePositions, [action.id]: { x: action.x, y: action.y } },
       };
 
+    case "SAVE_PROJECT_SNAPSHOT":
+      return { ...state, savedProjects: [...state.savedProjects, action.snapshot] };
+
+    case "DELETE_PROJECT_SNAPSHOT":
+      return {
+        ...state,
+        savedProjects: state.savedProjects.filter((s) => s.id !== action.id),
+      };
+
     case "RESET_PROJECT":
       return {
         ...state,
@@ -115,6 +126,7 @@ function reducer(state: AppState, action: Action): AppState {
       return {
         precedents: SEED_PRECEDENTS,
         project: blankProject(),
+        savedProjects: [],
         ui: blankUi(),
         nodePositions: {},
       };

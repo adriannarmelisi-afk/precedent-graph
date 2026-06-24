@@ -135,6 +135,8 @@ export function ProjectPanel({ onAnalyse }: { onAnalyse?: () => void }) {
                 <input
                   value={site.location}
                   onChange={(e) => updateSite({ location: e.target.value })}
+                  onKeyDown={(e) => e.key === "Enter" && runClimateLookup()}
+                  onBlur={runClimateLookup}
                   placeholder="Location, e.g. Bondi, coastal"
                   className="w-full rounded-md border border-hairline bg-surface-1 px-2.5 py-1.5 text-[12px] text-ink outline-none placeholder:text-ink-tertiary focus:border-primary"
                 />
@@ -142,10 +144,14 @@ export function ProjectPanel({ onAnalyse }: { onAnalyse?: () => void }) {
                   type="button"
                   onClick={runClimateLookup}
                   disabled={climateStatus.kind === "loading" || !site.location.trim()}
-                  title="Free climate lookup (Open-Meteo) — no key, no account"
-                  className="shrink-0 rounded-md border border-hairline-strong px-2 text-[11px] text-ink-subtle transition-colors hover:border-primary hover:text-primary disabled:opacity-40"
+                  title="Looks up real climate data for this location (Open-Meteo) — runs automatically on Enter too, but click to retry after an error."
+                  className="shrink-0 whitespace-nowrap rounded-md border border-hairline-strong px-2.5 text-[11px] text-ink-subtle transition-colors hover:border-primary hover:text-primary disabled:opacity-40"
                 >
-                  {climateStatus.kind === "loading" ? "…" : "☀ Climate"}
+                  {climateStatus.kind === "loading"
+                    ? "Looking up…"
+                    : climateStatus.kind === "ok"
+                      ? "✓ Look up climate"
+                      : "☀ Look up climate"}
                 </button>
               </div>
               <input

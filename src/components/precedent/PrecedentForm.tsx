@@ -4,7 +4,7 @@ import { addPrecedent, updatePrecedent } from "../../store/actions";
 import { TagInput } from "../sidebar/TagInput";
 import { fetchWikipediaSummary } from "../../utils/wikipediaUtils";
 import { extractPalette, extractPaletteFromFile } from "../../utils/colourUtils";
-import { normaliseTags } from "../../utils/tagUtils";
+import { normaliseTags, suggestTagsFromText } from "../../utils/tagUtils";
 import { getMaterialTags } from "../../utils/materialUtils";
 import { MaterialSwatch } from "../materials/MaterialSwatch";
 import type { Precedent, Swatch } from "../../types";
@@ -35,11 +35,13 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
   const [lookup, setLookup] = useState<Status>({ kind: "idle" });
   const [extract, setExtract] = useState<Status>({ kind: "idle" });
 
+  const [suggestedTags, setSuggestedTags] = useState<string[] | null>(null);
+
   const runExtraction = async (url: string) => {
     if (!url) return;
     setExtract({ kind: "loading" });
     try {
-      const hexes = await extractPalette(url, 5);
+      const hexes = await extractPalette(url, 7);
       setSwatches(hexes.map((hex) => ({ hex, label: "", sourceId: id })));
       setExtract({ kind: hexes.length ? "ok" : "error", message: hexes.length ? undefined : "No colours found" });
     } catch {
@@ -53,12 +55,22 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
   const runExtractionFromFile = async (file: File) => {
     setExtract({ kind: "loading" });
     try {
-      const hexes = await extractPaletteFromFile(file, 5);
+      const hexes = await extractPaletteFromFile(file, 7);
       setSwatches(hexes.map((hex) => ({ hex, label: "", sourceId: id })));
       setExtract({ kind: hexes.length ? "ok" : "error", message: hexes.length ? undefined : "No colours found" });
     } catch {
       setExtract({ kind: "error", message: "Couldn't read that file." });
     }
+  };
+
+  const runTagSuggest = (text: string) => {
+    const hits = suggestTagsFromText(text).filter((t) => !tags.includes(t));
+    setSuggestedTags(Array.from(new Set(hits)));
+  };
+
+  const acceptSuggestedTag = (tag: string) => {
+    setTags((prev) => normaliseTags([...prev, tag]));
+    setSuggestedTags((prev) => (prev ? prev.filter((t) => t !== tag) : prev));
   };
 
   const runLookup = async () => {
@@ -76,6 +88,7 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
         setImageUrl(result.imageUrl);
         await runExtraction(result.imageUrl);
       }
+      if (result.description) runTagSuggest(`${result.title} ${result.description}`);
       setLookup({
         kind: "ok",
         message: result.description || "Found — image and details auto-filled.",
@@ -251,7 +264,10 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
           {swatches.length > 0 && (
             <div>
               <label className="mb-2 block text-[10px] font-medium uppercase tracking-wide text-ink-tertiary">
-                Extracted colours — add a material label to each
+                Extracted colours
+                <span className="ml-1.5 font-normal normal-case">
+                  — optional: label any worth naming (shows in the palette and export instead of the hex code)
+                </span>
               </label>
               <div className="flex flex-col gap-2">
                 {swatches.map((s, i) => (
@@ -290,9 +306,50 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
           </div>
 
           <div>
-            <label className="mb-2 block text-[10px] font-medium uppercase tracking-wide text-ink-tertiary">
-              Tags
-            </label>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="block text-[10px] font-medium uppercase tracking-wide text-ink-tertiary">
+                Tags
+              </label>
+              <button
+                type="button"
+                onClick={() => runTagSuggest(`${name} ${demonstrates}`)}
+                disabled={!demonstrates.trim() && !name.trim()}
+                title="Scan the name and Demonstrates note for matching concept words"
+                className="shrink-0 rounded-md border border-hairline-strong px-2.5 py-1 text-[10px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary disabled:opacity-40"
+              >
+                ✦ Suggest tags
+              </button>
+            </div>
+
+            {suggestedTags !== null && (
+              <div className="mb-3 rounded-md border border-hairline bg-surface-2 p-2.5">
+                {suggestedTags.length === 0 ? (
+                  <p className="text-[11px] text-ink-tertiary">
+                    No new concept words found — try adding more detail to Demonstrates, or pick tags
+                    below.
+                  </p>
+                ) : (
+                  <>
+                    <span className="mb-1.5 block text-[10px] font-medium uppercase tracking-wide text-ink-tertiary">
+                      Found — tap to add
+                    </span>
+                    <div className="flex flex-wrap gap-1.5">
+                      {suggestedTags.map((tag) => (
+                        <button
+                          key={tag}
+                          type="button"
+                          onClick={() => acceptSuggestedTag(tag)}
+                          className="rounded-full border border-primary bg-primary-soft px-2.5 py-1 text-[11px] font-medium text-primary transition-colors hover:bg-primary hover:text-on-primary"
+                        >
+                          + {tag}
+                        </button>
+                      ))}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
+
             <TagInput selected={tags} onChange={setTags} />
           </div>
 

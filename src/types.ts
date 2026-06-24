@@ -40,6 +40,15 @@ export interface Project {
   chosenSwatchHexes?: string[];
 }
 
+export interface ProjectSnapshot {
+  id: string;
+  title: string;
+  summary: string;
+  tags: string[];
+  chosenSwatches: { hex: string; label: string }[];
+  savedAt: string;
+}
+
 export interface AnalyseRecommendation {
   precedentId: string;
   reason: string;
@@ -62,6 +71,7 @@ export interface UiState {
 export interface AppState {
   precedents: Precedent[];
   project: Project;
+  savedProjects: ProjectSnapshot[];
   ui: UiState;
   nodePositions: Record<string, { x: number; y: number }>;
 }

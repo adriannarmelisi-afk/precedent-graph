@@ -1,4 +1,4 @@
-import type { AnalyseResult, Precedent, Project, SidebarMode, Swatch } from "../types";
+import type { AnalyseResult, Precedent, Project, ProjectSnapshot, SidebarMode, Swatch } from "../types";
 
 export type Action =
   | { type: "ADD_PRECEDENT"; precedent: Precedent }
@@ -13,6 +13,8 @@ export type Action =
   | { type: "TOGGLE_TAG_FILTER"; tag: string }
   | { type: "SET_ANALYSE_RESULT"; result: AnalyseResult | null }
   | { type: "SAVE_NODE_POSITION"; id: string; x: number; y: number }
+  | { type: "SAVE_PROJECT_SNAPSHOT"; snapshot: ProjectSnapshot }
+  | { type: "DELETE_PROJECT_SNAPSHOT"; id: string }
   | { type: "RESET_PROJECT" }
   | { type: "RESET_ALL" };
 
@@ -47,6 +49,14 @@ export const saveNodePosition = (id: string, x: number, y: number): Action => ({
   id,
   x,
   y,
+});
+export const saveProjectSnapshot = (snapshot: ProjectSnapshot): Action => ({
+  type: "SAVE_PROJECT_SNAPSHOT",
+  snapshot,
+});
+export const deleteProjectSnapshot = (id: string): Action => ({
+  type: "DELETE_PROJECT_SNAPSHOT",
+  id,
 });
 export const resetProject = (): Action => ({ type: "RESET_PROJECT" });
 export const resetAll = (): Action => ({ type: "RESET_ALL" });

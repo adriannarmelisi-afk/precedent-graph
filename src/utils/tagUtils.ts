@@ -75,6 +75,14 @@ export function suggestTagsFromText(text: string): string[] {
   return found;
 }
 
+// Deterministic accent colour per tag — same tag always gets the same hue, so
+// a concept tag's colour stays consistent everywhere it's shown in the Library.
+export function tagAccentColour(tag: string): string {
+  let hash = 0;
+  for (let i = 0; i < tag.length; i++) hash = (hash * 31 + tag.charCodeAt(i)) % 360;
+  return `hsl(${hash}, 55%, 45%)`;
+}
+
 export function allTagsInUse(precedents: Precedent[], project: Project): string[] {
   const tags = new Set<string>();
   precedents.forEach((p) => p.tags.forEach((t) => tags.add(t)));
