@@ -25,7 +25,7 @@ function loadInitialState(): AppState {
   if (raw) {
     try {
       const parsed = JSON.parse(raw) as AppState;
-      return { savedProjects: [], ...parsed };
+      return { ...parsed, savedProjects: parsed.savedProjects ?? [] };
     } catch {
       // fall through to seed state if stored data is corrupt
     }
