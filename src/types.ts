@@ -83,6 +83,9 @@ export interface GraphNode {
   isInfluence: boolean;
   isRecommended: boolean;
   tags: string[];
+  // The node's Programme-vocabulary tag (e.g. "domestic", "educational"), or
+  // "uncategorised" if it has none — used to group the Connections tab.
+  category: string;
   x?: number;
   y?: number;
   fx?: number | null;

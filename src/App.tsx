@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from "react";
-import { Graph } from "./components/graph/Graph";
+import { ConnectionStrengthList } from "./components/graph/ConnectionStrengthList";
 import { PrecedentCard } from "./components/precedent/PrecedentCard";
 import { PrecedentForm } from "./components/precedent/PrecedentForm";
 import { ProjectPanel } from "./components/sidebar/ProjectPanel";
@@ -14,7 +14,6 @@ import {
   deletePrecedent,
   deleteProjectSnapshot,
   resetProject,
-  saveNodePosition,
   saveProjectSnapshot,
   setAnalyseResult,
   setSelected,
@@ -513,17 +512,17 @@ function AppShell() {
               <h2 className="mb-3 shrink-0 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
                 Connections
                 <span className="ml-2 font-normal normal-case text-ink-tertiary">
-                  shared tags + confirmed influences
+                  grouped by category, sorted by connection strength to your project
                 </span>
               </h2>
-              <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-hairline bg-surface-1">
-                <Graph
+              <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-hairline bg-surface-1 p-4">
+                <ConnectionStrengthList
                   nodes={nodes}
                   edges={edges}
+                  precedents={precedents}
                   activeTagFilters={ui.activeTagFilters}
-                  nodePositions={state.nodePositions}
-                  onNodeClick={handleNodeClick}
-                  onNodeDragEnd={(id, x, y) => dispatch(saveNodePosition(id, x, y))}
+                  onSelect={handleNodeClick}
+                  onTagClick={(tag) => dispatch(toggleTagFilter(tag))}
                 />
               </div>
             </section>

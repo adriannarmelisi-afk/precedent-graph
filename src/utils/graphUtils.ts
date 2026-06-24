@@ -1,4 +1,13 @@
 import type { AnalyseResult, GraphEdge, GraphNode, Precedent, Project } from "../types";
+import { TAG_VOCABULARY } from "../data/tagVocabulary";
+
+const PROGRAMME_TAGS = TAG_VOCABULARY["Programme"];
+
+// A precedent can carry several Programme tags (e.g. domestic + civic) — pick
+// the first one in vocabulary order so clustering is deterministic.
+function categoryFor(tags: string[]): string {
+  return PROGRAMME_TAGS.find((t) => tags.includes(t)) ?? "uncategorised";
+}
 
 export function buildNodes(
   precedents: Precedent[],
@@ -14,6 +23,7 @@ export function buildNodes(
     isInfluence: p.isInfluence,
     isRecommended: recommendedIds.has(p.id),
     tags: p.tags,
+    category: categoryFor(p.tags),
   }));
 
   const projectNode: GraphNode = {
@@ -23,6 +33,7 @@ export function buildNodes(
     isInfluence: true,
     isRecommended: false,
     tags: project.tags,
+    category: categoryFor(project.tags),
   };
 
   return [projectNode, ...precedentNodes];
