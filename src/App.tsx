@@ -85,7 +85,10 @@ function AppShell() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
-  const [activeView, setActiveView] = useState<AppView>("library");
+  const isProjectEmpty = !project.title && !project.summary && project.tags.length === 0;
+  // First-time visitors land on Project (nothing to research without a concept yet);
+  // once it's filled in, default to Library on future loads.
+  const [activeView, setActiveView] = useState<AppView>(isProjectEmpty ? "project" : "library");
   const [inspectorOpen, setInspectorOpen] = useState(true);
   const inspectorAvailable = activeView === "library" || activeView === "connections";
 
