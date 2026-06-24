@@ -8,8 +8,8 @@ interface ViewTabsProps {
 }
 
 const ITEMS: { id: AppView; label: string }[] = [
-  { id: "library", label: "Library" },
   { id: "project", label: "Project" },
+  { id: "library", label: "Library" },
   { id: "connections", label: "Connections" },
   { id: "export", label: "Export" },
 ];
