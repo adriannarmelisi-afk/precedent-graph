@@ -19,6 +19,7 @@ import {
   setTagFilters,
   toggleInfluence,
   toggleTagFilter,
+  updateProject,
 } from "./store/actions";
 import { StoreProvider, useStore } from "./store/appStore";
 import { useGraph } from "./hooks/useGraph";
@@ -36,6 +37,23 @@ function AppShell() {
   const { precedents, project, ui } = state;
   const projectTags = useMemo(() => new Set(project.tags), [project.tags]);
   const allTags = useMemo(() => allTagsInUse(precedents, project), [precedents, project]);
+
+  const chosenHexSet = useMemo(
+    () => new Set((project.chosenSwatchHexes ?? []).map((h) => h.toLowerCase())),
+    [project.chosenSwatchHexes],
+  );
+  const chosenSwatches = useMemo(
+    () => palette.filter((entry) => chosenHexSet.has(entry.hex.toLowerCase())),
+    [palette, chosenHexSet],
+  );
+  const toggleChosenSwatch = (hex: string) => {
+    const key = hex.toLowerCase();
+    const current = project.chosenSwatchHexes ?? [];
+    const next = current.some((h) => h.toLowerCase() === key)
+      ? current.filter((h) => h.toLowerCase() !== key)
+      : [...current, hex];
+    dispatch(updateProject({ chosenSwatchHexes: next }));
+  };
 
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -209,11 +227,38 @@ function AppShell() {
                 <AnalysePanel result={ui.analyseResult} source={analyseSource} />
               )}
 
+              <div className="rounded-lg border-2 border-primary bg-surface-1 p-5">
+                <h3 className="mb-1 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
+                  Your drawing palette
+                  <span className="ml-1.5 font-normal normal-case">
+                    {chosenSwatches.length} colours starred for your own graphics
+                  </span>
+                </h3>
+                {chosenSwatches.length === 0 ? (
+                  <p className="text-[12px] leading-relaxed text-ink-tertiary">
+                    Star colours below to build the specific set you'll actually use in your drawings —
+                    separate from the full extracted palette.
+                  </p>
+                ) : (
+                  <div className="mt-2 flex flex-col gap-3">
+                    {chosenSwatches.map((entry, i) => (
+                      <SwatchChip
+                        key={entry.hex + i}
+                        entry={entry}
+                        chosen
+                        onToggleChosen={toggleChosenSwatch}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
+
               <div className="rounded-lg border border-hairline bg-surface-1 p-5">
                 <h3 className="mb-3 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
                   Combined palette
                   <span className="ml-1.5 font-normal normal-case">
-                    {palette.length} colours, all influences
+                    {palette.length} colours, all influences — click a swatch or hex to copy, star to
+                    add to your drawing palette
                   </span>
                 </h3>
                 {palette.length === 0 ? (
@@ -224,7 +269,12 @@ function AppShell() {
                 ) : (
                   <div className="flex flex-col gap-3">
                     {palette.map((entry, i) => (
-                      <SwatchChip key={entry.hex + i} entry={entry} />
+                      <SwatchChip
+                        key={entry.hex + i}
+                        entry={entry}
+                        chosen={chosenHexSet.has(entry.hex.toLowerCase())}
+                        onToggleChosen={toggleChosenSwatch}
+                      />
                     ))}
                   </div>
                 )}
@@ -286,7 +336,9 @@ function AppShell() {
                 <h2 className="text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
                   Export style kit
                   <span className="ml-2 font-normal normal-case text-ink-tertiary">
-                    one-page PNG of your palette, materials, and concept
+                    {chosenSwatches.length > 0
+                      ? `uses your ${chosenSwatches.length}-colour drawing palette`
+                      : "uses the full combined palette — star colours on Project to curate"}
                   </span>
                 </h2>
                 <button
@@ -302,7 +354,7 @@ function AppShell() {
                 <StyleKitExport
                   ref={sheetRef}
                   project={project}
-                  palette={palette}
+                  palette={chosenSwatches.length > 0 ? chosenSwatches : palette}
                   materials={materials}
                   influences={influences}
                 />
@@ -402,7 +454,12 @@ function AppShell() {
               ) : (
                 <div className="flex flex-col gap-3">
                   {palette.map((entry, i) => (
-                    <SwatchChip key={entry.hex + i} entry={entry} />
+                    <SwatchChip
+                      key={entry.hex + i}
+                      entry={entry}
+                      chosen={chosenHexSet.has(entry.hex.toLowerCase())}
+                      onToggleChosen={toggleChosenSwatch}
+                    />
                   ))}
                 </div>
               )}

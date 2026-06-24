@@ -111,6 +111,11 @@ export const StyleKitExport = forwardRef<HTMLDivElement, StyleKitExportProps>(
                       {s.hex}
                     </div>
                     <div style={{ fontSize: 11, color: C.subtle, marginTop: 2 }}>{s.sourceName}</div>
+                    {s.sharedTags.length > 0 && (
+                      <div style={{ fontSize: 10, color: C.primary, marginTop: 3 }}>
+                        {s.sharedTags.join(" · ")}
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}

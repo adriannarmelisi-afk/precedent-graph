@@ -35,6 +35,9 @@ export interface Project {
   tags: string[];
   influenceIds: string[];
   site?: SiteContext;
+  // Hex codes the student has curated from the full extracted palette as the
+  // specific set they'll actually use in their own drawings/graphics.
+  chosenSwatchHexes?: string[];
 }
 
 export interface AnalyseRecommendation {
