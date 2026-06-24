@@ -3,7 +3,6 @@ import { Graph } from "./components/graph/Graph";
 import { PrecedentCard } from "./components/precedent/PrecedentCard";
 import { PrecedentForm } from "./components/precedent/PrecedentForm";
 import { ProjectPanel } from "./components/sidebar/ProjectPanel";
-import { AnalysePanel } from "./components/analyse/AnalysePanel";
 import { StyleKitExport } from "./components/export/StyleKitExport";
 import { TagFilterPanel } from "./components/tags/TagFilterPanel";
 import { SwatchChip } from "./components/palette/SwatchChip";
@@ -130,10 +129,37 @@ function AppShell() {
       const { result, source } = await analyseInfluences(project, precedents);
       dispatch(setAnalyseResult(result));
       setAnalyseSource(source);
+      setActiveView("library");
     } finally {
       setAnalysing(false);
     }
   };
+
+  // Once Analyse has run, group the Library by which concept tag each
+  // precedent matches (in the project's own tag order), ranked by Analyse's
+  // score within each group; anything with no overlap falls into "Others".
+  const analyseRankById = useMemo(() => {
+    if (!ui.analyseResult) return null;
+    const map = new Map<string, number>();
+    ui.analyseResult.recommendations.forEach((r, i) => map.set(r.precedentId, i));
+    return map;
+  }, [ui.analyseResult]);
+
+  const taggedGroups = useMemo(() => {
+    if (!analyseRankById) return null;
+    const matched = new Set<string>();
+    const groups = project.tags
+      .map((tag) => {
+        const members = visiblePrecedents
+          .filter((p) => p.tags.includes(tag))
+          .sort((a, b) => (analyseRankById.get(a.id) ?? Infinity) - (analyseRankById.get(b.id) ?? Infinity));
+        members.forEach((p) => matched.add(p.id));
+        return { tag, members };
+      })
+      .filter((g) => g.members.length > 0);
+    const others = visiblePrecedents.filter((p) => !matched.has(p.id));
+    return { groups, others };
+  }, [analyseRankById, project.tags, visiblePrecedents]);
 
   return (
     <div className="flex h-screen w-screen flex-col bg-canvas text-ink">
@@ -203,6 +229,75 @@ function AppShell() {
                   + Add precedent
                 </button>
               </div>
+
+              {taggedGroups && (
+                <div className="mb-5 flex items-center justify-between rounded-md border border-primary bg-primary-soft px-3 py-2">
+                  <span className="text-[12px] text-primary">
+                    Grouped by concept tag from your last Analyse
+                    {analyseSource === "local" ? " (offline)" : " (Claude)"}
+                    {ui.analyseResult && ui.analyseResult.gaps.length > 0 && (
+                      <> — {ui.analyseResult.gaps.join(" ")}</>
+                    )}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => dispatch(setAnalyseResult(null))}
+                    className="shrink-0 text-[11px] font-medium text-primary underline hover:no-underline"
+                  >
+                    Show all precedents
+                  </button>
+                </div>
+              )}
+
+              {taggedGroups ? (
+                <div className="flex flex-col gap-7">
+                  {taggedGroups.groups.map(({ tag, members }) => (
+                    <div key={tag}>
+                      <h3 className="mb-3 text-[11px] font-medium uppercase tracking-wide text-primary">
+                        {tag}
+                        <span className="ml-1.5 font-normal normal-case text-ink-tertiary">
+                          {members.length} match{members.length === 1 ? "" : "es"}
+                        </span>
+                      </h3>
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+                        {members.map((p) => (
+                          <PrecedentCard
+                            key={p.id}
+                            precedent={p}
+                            selected={ui.selected === p.id}
+                            sharedWithProject={p.tags.filter((t) => projectTags.has(t)).length}
+                            onSelect={(id) => dispatch(setSelected(id))}
+                            onToggleInfluence={(id, next) => dispatch(toggleInfluence(id, next))}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  ))}
+
+                  {taggedGroups.others.length > 0 && (
+                    <div>
+                      <h3 className="mb-3 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
+                        Others
+                        <span className="ml-1.5 font-normal normal-case text-ink-tertiary">
+                          no overlap with your concept tags
+                        </span>
+                      </h3>
+                      <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
+                        {taggedGroups.others.map((p) => (
+                          <PrecedentCard
+                            key={p.id}
+                            precedent={p}
+                            selected={ui.selected === p.id}
+                            sharedWithProject={0}
+                            onSelect={(id) => dispatch(setSelected(id))}
+                            onToggleInfluence={(id, next) => dispatch(toggleInfluence(id, next))}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ) : (
               <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-4">
                 {visiblePrecedents.map((p) => {
                   const shared = p.tags.filter((t) => projectTags.has(t)).length;
@@ -218,6 +313,7 @@ function AppShell() {
                   );
                 })}
               </div>
+              )}
             </section>
           )}
 
@@ -225,9 +321,10 @@ function AppShell() {
             <div className="mx-auto flex max-w-2xl flex-col gap-6">
               <ProjectPanel onAnalyse={handleAnalyse} />
 
-              {analysing && <p className="text-[12px] text-ink-tertiary">Analysing your concept…</p>}
-              {ui.analyseResult && !analysing && (
-                <AnalysePanel result={ui.analyseResult} source={analyseSource} />
+              {analysing && (
+                <p className="text-[12px] text-ink-tertiary">
+                  Analysing your concept… taking you to Library once it's done.
+                </p>
               )}
 
               <div className="rounded-lg border-2 border-primary bg-surface-1 p-5">

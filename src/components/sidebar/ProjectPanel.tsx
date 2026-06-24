@@ -151,7 +151,8 @@ export function ProjectPanel({ onAnalyse }: { onAnalyse?: () => void }) {
               <input
                 value={site.orientation}
                 onChange={(e) => updateSite({ orientation: e.target.value })}
-                placeholder="Orientation, e.g. north-facing slope"
+                placeholder="Which way it faces, e.g. north-facing"
+                title="The compass direction your site faces or opens towards — check your site plan, a compass app, or Google Maps' north arrow"
                 className="w-full rounded-md border border-hairline bg-surface-1 px-2.5 py-1.5 text-[12px] text-ink outline-none placeholder:text-ink-tertiary focus:border-primary"
               />
             </div>
