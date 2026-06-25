@@ -130,16 +130,20 @@ export async function analyseInfluences(
   try {
     const result = await semanticAnalyse(project, precedents);
     return { result, source: "semantic" };
-  } catch {
-    // Model failed to load — fall through to Claude (if configured) or local.
+  } catch (err) {
+    // Model failed to load (no network for the one-time download, the host
+    // blocking huggingface.co, an unsupported browser, etc). Logged so the
+    // real cause is visible in devtools instead of silently vanishing —
+    // falls through to Claude (if configured) or local either way.
+    console.warn("On-device AI model failed to load, falling back:", err);
   }
 
   if (API_KEY) {
     try {
       const result = await claudeAnalyse(project, precedents);
       return { result, source: "claude" };
-    } catch {
-      // Any failure (no network, bad key, malformed JSON) falls back to local.
+    } catch (err) {
+      console.warn("Claude analysis failed, falling back to local:", err);
     }
   }
 
