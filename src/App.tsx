@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { ConnectionStrengthList } from "./components/graph/ConnectionStrengthList";
+import { ProjectHero } from "./components/project/ProjectHero";
 import { PrecedentCard } from "./components/precedent/PrecedentCard";
 import { PrecedentForm } from "./components/precedent/PrecedentForm";
 import { ProjectPanel } from "./components/sidebar/ProjectPanel";
@@ -406,6 +407,13 @@ function AppShell() {
 
           {activeView === "project" && (
             <div className="mx-auto flex max-w-2xl flex-col gap-6">
+              <ProjectHero
+                title={project.title}
+                precedentCount={precedents.length}
+                influenceCount={influenceCount}
+                onOpenLibrary={() => setActiveView("library")}
+              />
+
               <ProjectPanel onAnalyse={handleAnalyse} />
 
               {analysing && (
