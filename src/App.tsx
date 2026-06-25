@@ -109,7 +109,10 @@ function AppShell() {
   // First-time visitors land on Project (nothing to research without a concept yet);
   // once it's filled in, default to Library on future loads.
   const [activeView, setActiveView] = useState<AppView>(isProjectEmpty ? "project" : "library");
-  const [inspectorOpen, setInspectorOpen] = useState(true);
+  // The inspector is a fixed-width side panel, not a true responsive
+  // layout — default it closed on narrow screens so it doesn't overlap the
+  // main content; still reachable any time via the ☰ toggle.
+  const [inspectorOpen, setInspectorOpen] = useState(() => window.innerWidth >= 768);
   const inspectorAvailable = activeView === "library" || activeView === "connections";
 
   const handleNodeClick = (id: string) => {
@@ -225,7 +228,11 @@ function AppShell() {
       />
 
       <div className="flex flex-1 overflow-hidden bg-canvas">
-        <main className="flex-1 overflow-y-auto p-6">
+        <main
+          className={`flex-1 overflow-y-auto p-6 ${
+            inspectorAvailable && inspectorOpen ? "hidden sm:block" : ""
+          }`}
+        >
           {activeView === "library" && (
             <section>
               <div className="mb-3 flex items-center justify-between gap-3">
@@ -562,7 +569,7 @@ function AppShell() {
         </main>
 
         {inspectorAvailable && inspectorOpen && (
-          <aside className="flex w-80 shrink-0 flex-col gap-6 overflow-y-auto border-l border-hairline bg-surface-2 p-5">
+          <aside className="flex w-full shrink-0 flex-col gap-6 overflow-y-auto border-l border-hairline bg-surface-2 p-5 sm:w-80">
             <TagFilterPanel
               tags={allTags}
               active={ui.activeTagFilters}
@@ -573,9 +580,11 @@ function AppShell() {
           {selected && (
             <div className="rounded-lg border border-hairline bg-surface-1 p-4">
               <h3 className="text-sm font-medium text-ink">{selected.name}</h3>
-              <p className="mt-0.5 text-xs text-ink-tertiary">
-                {selected.architect} · {selected.year}
-              </p>
+              {(selected.architect || selected.year > 0) && (
+                <p className="mt-0.5 text-xs text-ink-tertiary">
+                  {[selected.architect, selected.year > 0 ? selected.year : ""].filter(Boolean).join(" · ")}
+                </p>
+              )}
               <p className="mt-3 text-[13px] leading-relaxed text-ink-muted">
                 {selected.demonstrates}
               </p>

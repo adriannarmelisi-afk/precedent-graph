@@ -146,55 +146,23 @@ export const StyleKitExport = forwardRef<HTMLDivElement, StyleKitExportProps>(
           )}
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 24 }}>
-          <div>
-            <SectionLabel>Graphic key</SectionLabel>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-              <KeyRow>
-                <Dot fill={C.hairlineStrong} stroke={C.tertiary} />
-                <span>Precedent</span>
-              </KeyRow>
-              <KeyRow>
-                <Dot fill={C.primary} stroke={C.primary} />
-                <span>Influence</span>
-              </KeyRow>
-              <KeyRow>
-                <Diamond />
-                <span>Your project</span>
-              </KeyRow>
-              <KeyRow>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, width: 28 }}>
-                  <span style={{ width: 24, height: 1, background: C.hairlineStrong }} />
-                </span>
-                <span>1 shared tag</span>
-              </KeyRow>
-              <KeyRow>
-                <span style={{ display: "inline-flex", alignItems: "center", gap: 6, width: 28 }}>
-                  <span style={{ width: 24, height: 4, background: C.tertiary }} />
-                </span>
-                <span>3+ shared tags</span>
-              </KeyRow>
+        <div>
+          <SectionLabel>Source precedents</SectionLabel>
+          {influences.length === 0 ? (
+            <div style={{ fontSize: 13, color: C.tertiary }}>
+              No influences selected yet — mark precedents as influences to list them here.
             </div>
-          </div>
-
-          <div>
-            <SectionLabel>Source precedents</SectionLabel>
-            {influences.length === 0 ? (
-              <div style={{ fontSize: 13, color: C.tertiary }}>
-                No influences selected yet — mark precedents as influences to list them here.
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                {influences.map((p) => (
-                  <div key={p.id} style={{ fontSize: 13, color: C.muted, lineHeight: 1.5 }}>
-                    <span style={{ color: C.ink, fontWeight: 500 }}>{p.name}</span>
-                    {p.architect && ` — ${p.architect}`}
-                    {p.year ? `, ${p.year}` : ""}
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+              {influences.map((p) => (
+                <div key={p.id} style={{ fontSize: 13, color: C.muted, lineHeight: 1.5 }}>
+                  <span style={{ color: C.ink, fontWeight: 500 }}>{p.name}</span>
+                  {p.architect && ` — ${p.architect}`}
+                  {p.year ? `, ${p.year}` : ""}
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         <div style={{ borderTop: `1px solid ${C.hairline}`, marginTop: 28, paddingTop: 12, fontSize: 11, color: C.tertiary }}>
@@ -215,14 +183,3 @@ function SectionLabel({ children }: { children: React.ReactNode }) {
   );
 }
 
-function KeyRow({ children }: { children: React.ReactNode }) {
-  return <div style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 13, color: C.muted }}>{children}</div>;
-}
-
-function Dot({ fill, stroke }: { fill: string; stroke: string }) {
-  return <span style={{ width: 16, height: 16, borderRadius: "50%", background: fill, border: `2px solid ${stroke}`, boxSizing: "border-box", display: "inline-block" }} />;
-}
-
-function Diamond() {
-  return <span style={{ width: 14, height: 14, background: C.primary, transform: "rotate(45deg)", display: "inline-block", margin: 1 }} />;
-}

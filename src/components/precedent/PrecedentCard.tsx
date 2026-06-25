@@ -49,9 +49,11 @@ export function PrecedentCard({
 
       <div className="flex flex-1 flex-col p-3">
         <div className="text-[13px] font-medium leading-tight text-ink">{name}</div>
-        <div className="mt-0.5 text-[11px] text-ink-tertiary">
-          {architect} · {year}
-        </div>
+        {(architect || year > 0) && (
+          <div className="mt-0.5 text-[11px] text-ink-tertiary">
+            {[architect, year > 0 ? year : ""].filter(Boolean).join(" · ")}
+          </div>
+        )}
 
         {swatches.length > 0 && (
           <div className="mt-2.5 flex gap-1">
