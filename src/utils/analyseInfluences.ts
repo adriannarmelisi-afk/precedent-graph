@@ -1,13 +1,7 @@
 import type { AnalyseResult, Precedent, Project } from "../types";
 import { suggestTagsFromText } from "./tagUtils";
-import { TAG_VOCABULARY } from "../data/tagVocabulary";
-
-function categoryOf(tag: string): string {
-  for (const [category, tags] of Object.entries(TAG_VOCABULARY)) {
-    if (tags.includes(tag)) return category;
-  }
-  return "Other";
-}
+import { computeGaps } from "./analyseGaps";
+import { semanticAnalyse } from "./semanticAnalyse";
 
 const API_KEY = import.meta.env.VITE_ANTHROPIC_API_KEY as string | undefined;
 const MODEL = "claude-haiku-4-5-20251001";
@@ -33,7 +27,7 @@ function siteDerivedTags(project: Project): string[] {
 
 export interface AnalyseOutcome {
   result: AnalyseResult;
-  source: "claude" | "local";
+  source: "semantic" | "claude" | "local";
 }
 
 interface AnalyseInput {
@@ -91,63 +85,63 @@ function localAnalyse(project: Project, precedents: Precedent[]): AnalyseResult 
       };
     });
 
-  const covered = new Set(precedents.flatMap((p) => p.tags));
-  const missing = project.tags.filter((t) => !covered.has(t));
-
-  // Group by vocabulary category so this reads like design critique
-  // ("your Atmosphere intent isn't covered yet") rather than a flat tag dump.
-  const byCategory = new Map<string, string[]>();
-  for (const tag of missing) {
-    const category = categoryOf(tag);
-    byCategory.set(category, [...(byCategory.get(category) ?? []), tag]);
-  }
-  const gaps = Array.from(byCategory.entries()).map(
-    ([category, tags]) =>
-      `No logged precedent yet addresses your ${category.toLowerCase()} intent: ${tags.join(", ")}.`,
-  );
-
-  return { recommendations, gaps };
+  return { recommendations, gaps: computeGaps(project, precedents) };
 }
 
+async function claudeAnalyse(project: Project, precedents: Precedent[]): Promise<AnalyseResult> {
+  const payload: AnalyseInput[] = precedents.map((p) => ({
+    id: p.id,
+    name: p.name,
+    demonstrates: p.demonstrates,
+    tags: p.tags,
+  }));
+
+  const response = await fetch("https://api.anthropic.com/v1/messages", {
+    method: "POST",
+    headers: {
+      "x-api-key": API_KEY ?? "",
+      "anthropic-version": "2023-06-01",
+      "content-type": "application/json",
+      "anthropic-dangerous-direct-browser-access": "true",
+    },
+    body: JSON.stringify({
+      model: MODEL,
+      max_tokens: 1024,
+      messages: [{ role: "user", content: buildPrompt(project, payload) }],
+    }),
+  });
+
+  if (!response.ok) throw new Error(`Anthropic API ${response.status}`);
+  const data = await response.json();
+  const text: string = data.content?.[0]?.text ?? "";
+  const json = text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1);
+  return JSON.parse(json) as AnalyseResult;
+}
+
+// Default path is the free, on-device semantic model — no key, no account,
+// no per-request cost. Claude is only used if a key has been explicitly
+// configured (kept for flexibility, never required). Local tag-overlap is
+// the last-resort fallback if the in-browser model can't load at all (e.g.
+// no network for the one-time download, or an unsupported browser).
 export async function analyseInfluences(
   project: Project,
   precedents: Precedent[],
 ): Promise<AnalyseOutcome> {
-  if (!API_KEY) {
-    return { result: localAnalyse(project, precedents), source: "local" };
-  }
-
   try {
-    const payload = precedents.map((p) => ({
-      id: p.id,
-      name: p.name,
-      demonstrates: p.demonstrates,
-      tags: p.tags,
-    }));
-
-    const response = await fetch("https://api.anthropic.com/v1/messages", {
-      method: "POST",
-      headers: {
-        "x-api-key": API_KEY,
-        "anthropic-version": "2023-06-01",
-        "content-type": "application/json",
-        "anthropic-dangerous-direct-browser-access": "true",
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 1024,
-        messages: [{ role: "user", content: buildPrompt(project, payload) }],
-      }),
-    });
-
-    if (!response.ok) throw new Error(`Anthropic API ${response.status}`);
-    const data = await response.json();
-    const text: string = data.content?.[0]?.text ?? "";
-    const json = text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1);
-    const parsed = JSON.parse(json) as AnalyseResult;
-    return { result: parsed, source: "claude" };
+    const result = await semanticAnalyse(project, precedents);
+    return { result, source: "semantic" };
   } catch {
-    // Any failure (no network, bad key, malformed JSON) falls back to local logic.
-    return { result: localAnalyse(project, precedents), source: "local" };
+    // Model failed to load — fall through to Claude (if configured) or local.
   }
+
+  if (API_KEY) {
+    try {
+      const result = await claudeAnalyse(project, precedents);
+      return { result, source: "claude" };
+    } catch {
+      // Any failure (no network, bad key, malformed JSON) falls back to local.
+    }
+  }
+
+  return { result: localAnalyse(project, precedents), source: "local" };
 }

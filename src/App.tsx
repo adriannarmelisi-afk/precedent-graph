@@ -99,7 +99,7 @@ function AppShell() {
   const selected = precedents.find((p) => p.id === ui.selected) ?? null;
   const influenceCount = precedents.filter((p) => p.isInfluence).length;
 
-  const [analyseSource, setAnalyseSource] = useState<"claude" | "local">("local");
+  const [analyseSource, setAnalyseSource] = useState<"semantic" | "claude" | "local">("local");
   const [analysing, setAnalysing] = useState(false);
   const [form, setForm] = useState<{ mode: "add" | "edit"; id?: string } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
@@ -262,7 +262,11 @@ function AppShell() {
                 <div className="mb-5 flex items-center justify-between rounded-md border border-primary bg-primary-soft px-3 py-2">
                   <span className="text-[12px] text-primary">
                     Grouped by concept tag from your last Analyse
-                    {analyseSource === "local" ? " (offline)" : " (Claude)"}
+                    {analyseSource === "semantic"
+                      ? " (on-device AI)"
+                      : analyseSource === "claude"
+                        ? " (Claude)"
+                        : " (offline)"}
                     {ui.analyseResult && ui.analyseResult.gaps.length > 0 && (
                       <> — {ui.analyseResult.gaps.join(" ")}</>
                     )}
@@ -588,6 +592,17 @@ function AppShell() {
               <p className="mt-3 text-[13px] leading-relaxed text-ink-muted">
                 {selected.demonstrates}
               </p>
+              {(() => {
+                const match = ui.analyseResult?.recommendations.find(
+                  (r) => r.precedentId === selected.id,
+                );
+                if (!match) return null;
+                return (
+                  <p className="mt-3 rounded-md border border-primary bg-primary-soft px-2.5 py-2 text-[12px] leading-relaxed text-primary">
+                    <span className="font-medium">✦ Analyse:</span> {match.reason}
+                  </p>
+                );
+              })()}
               {selected.swatches.length > 0 && (
                 <div className="mt-3 flex gap-1.5">
                   {selected.swatches.map((s, i) => (

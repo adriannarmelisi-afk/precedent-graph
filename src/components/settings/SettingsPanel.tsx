@@ -47,9 +47,12 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
             feeds your design language instead of sitting beside it.
           </p>
           <p className="mt-3 text-[13px] leading-relaxed text-ink-muted">
-            <strong className="text-ink">Analyse runs entirely offline by default</strong> — colour
-            and tag matching happen in your browser, nothing is sent anywhere. An optional
-            Claude-powered comparison is available only if you supply your own API key.
+            <strong className="text-ink">Analyse runs a real AI model entirely in your browser</strong> —
+            a small free sentence-embedding model compares your concept's meaning against each
+            precedent, with no API key, no account, and no per-use cost. Colour extraction is always
+            local too. If that model can't load, it falls back to plain offline tag-matching — nothing
+            is ever sent anywhere either way. An optional Claude-powered comparison is available only
+            if you supply your own paid API key.
           </p>
         </section>
 
