@@ -30,6 +30,8 @@ import { useMaterialPalette } from "./hooks/useMaterialPalette";
 import { allTagsInUse, tagAccentColour } from "./utils/tagUtils";
 import { analyseInfluences } from "./utils/analyseInfluences";
 import { warmUpSemanticModel } from "./utils/semanticAnalyse";
+import { SAMPLE_PROJECTS } from "./data/sampleProjects";
+import { DrawingRecolour } from "./components/drawing/DrawingRecolour";
 
 function AppShell() {
   const { state, dispatch } = useStore();
@@ -80,9 +82,30 @@ function AppShell() {
   };
 
   const handleNewProject = () => {
-    if (confirm("Start a new project? This clears the current title, summary, tags, and palette — save it first if you want to keep it.")) {
-      dispatch(resetProject());
-    }
+    dispatch(resetProject());
+  };
+
+  // Lets a tutor (or anyone testing the app cold) see a fully worked example
+  // in one click, instead of needing to type in a concept before anything
+  // interesting shows up. Several worked concepts so repeat clicks don't
+  // just show the same demo twice in a row.
+  const handleGenerateSample = () => {
+    const pool = SAMPLE_PROJECTS.length > 1
+      ? SAMPLE_PROJECTS.filter((s) => s.title !== project.title)
+      : SAMPLE_PROJECTS;
+    const sample = pool[Math.floor(Math.random() * pool.length)];
+
+    precedents.filter((p) => p.isInfluence).forEach((p) => dispatch(toggleInfluence(p.id, false)));
+    dispatch(
+      updateProject({
+        title: sample.title,
+        summary: sample.summary,
+        tags: sample.tags,
+        site: sample.site,
+      }),
+    );
+    sample.influenceIds.forEach((id) => dispatch(toggleInfluence(id, true)));
+    setActiveView("project");
   };
 
   const [searchQuery, setSearchQuery] = useState("");
@@ -199,7 +222,7 @@ function AppShell() {
     <div className="flex h-screen w-screen flex-col bg-canvas text-ink">
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-hairline bg-surface-1 px-6">
         <div className="flex items-baseline gap-3">
-          <span className="font-display text-[15px] font-semibold tracking-tight text-ink">
+          <span className="font-display text-[15px] font-bold uppercase tracking-tight text-ink">
             Concept Constellation
           </span>
           <span className="text-xs text-ink-tertiary">
@@ -207,6 +230,15 @@ function AppShell() {
           </span>
         </div>
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={handleGenerateSample}
+            className="flex items-center gap-1.5 rounded-full border border-hairline-strong bg-surface-2 px-3 py-1.5 text-[12px] font-medium text-ink-subtle shadow-sm transition-colors hover:border-primary hover:text-primary"
+            title="Loads a worked example project so you can test the app without typing in your own concept first"
+          >
+            <span aria-hidden="true">✦</span>
+            generate sample project
+          </button>
           {inspectorAvailable && (
             <button
               type="button"
@@ -273,9 +305,9 @@ function AppShell() {
                   <span className="text-[12px] text-primary">
                     Grouped by concept tag from your last Analyse
                     {analyseSource === "semantic"
-                      ? " (on-device AI)"
+                      ? " (smart match)"
                       : analyseSource === "claude"
-                        ? " (Claude)"
+                        ? " (cloud match)"
                         : " (offline)"}
                     {ui.analyseResult && ui.analyseResult.gaps.length > 0 && (
                       <> — {ui.analyseResult.gaps.join(" ")}</>
@@ -418,8 +450,8 @@ function AppShell() {
 
               {analysing && (
                 <p className="text-[12px] text-ink-tertiary">
-                  Analysing your concept with a free on-device AI model… the first run can take up
-                  to 30 seconds (downloading + thinking through every precedent), much faster after
+                  Analysing your concept with the built-in matching engine… the first run can take up
+                  to 30 seconds (downloading + comparing against every precedent), much faster after
                   that. Taking you to Library once it's done.
                 </p>
               )}
@@ -556,6 +588,10 @@ function AppShell() {
                 />
               </div>
             </section>
+          )}
+
+          {activeView === "drawing" && (
+            <DrawingRecolour palette={palette} chosenSwatches={chosenSwatches} />
           )}
 
           {activeView === "export" && (

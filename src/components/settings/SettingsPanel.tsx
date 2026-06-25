@@ -39,25 +39,6 @@ export function SettingsPanel({ onClose }: { onClose: () => void }) {
 
         <section className="mb-6">
           <h3 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
-            About this tool
-          </h3>
-          <p className="text-[13px] leading-relaxed text-ink-muted">
-            Precedent research usually stays a disconnected scrapbook of saved images. This tool
-            links it to your concept tags, colour palette, and materials, so the research actually
-            feeds your design language instead of sitting beside it.
-          </p>
-          <p className="mt-3 text-[13px] leading-relaxed text-ink-muted">
-            <strong className="text-ink">Analyse runs a real AI model entirely in your browser</strong> —
-            a small free sentence-embedding model compares your concept's meaning against each
-            precedent, with no API key, no account, and no per-use cost. Colour extraction is always
-            local too. If that model can't load, it falls back to plain offline tag-matching — nothing
-            is ever sent anywhere either way. An optional Claude-powered comparison is available only
-            if you supply your own paid API key.
-          </p>
-        </section>
-
-        <section className="mb-6 border-t border-hairline pt-5">
-          <h3 className="mb-2 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
             Data
           </h3>
           <div className="flex flex-col gap-2">

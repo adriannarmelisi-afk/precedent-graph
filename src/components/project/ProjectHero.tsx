@@ -43,7 +43,7 @@ export function ProjectHero({ projectTitle, precedentCount, influenceCount, onOp
         </div>
       </div>
 
-      <h1 className="relative mt-10 text-[28px] font-semibold leading-none tracking-tight text-ink sm:text-[44px] md:text-[56px]">
+      <h1 className="relative mt-10 text-[28px] font-bold uppercase leading-none tracking-tight text-ink sm:text-[44px] md:text-[56px]">
         Concept Constellation
       </h1>
       <p className="relative mt-2 truncate text-[12px] text-ink-subtle">

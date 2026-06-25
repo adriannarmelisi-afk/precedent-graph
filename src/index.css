@@ -29,8 +29,8 @@
 
   --color-success: #27a644;
 
-  --font-display: "Inter", -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
-  --font-text: "Inter", -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-display: "DM Sans", -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-text: "DM Sans", -apple-system, system-ui, "Segoe UI", Roboto, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, monospace;
 }
 

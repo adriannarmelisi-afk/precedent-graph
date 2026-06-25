@@ -1,4 +1,4 @@
-export type AppView = "library" | "project" | "connections" | "export";
+export type AppView = "library" | "project" | "connections" | "drawing" | "export";
 
 interface ViewTabsProps {
   active: AppView;
@@ -11,6 +11,7 @@ const ITEMS: { id: AppView; label: string }[] = [
   { id: "project", label: "Project" },
   { id: "library", label: "Library" },
   { id: "connections", label: "Connections" },
+  { id: "drawing", label: "Drawing" },
   { id: "export", label: "Export" },
 ];
 
