@@ -24,15 +24,43 @@ function loadPipeline(): Promise<FeatureExtractionPipeline> {
   return pipelinePromise;
 }
 
+// Precedent embeddings are the expensive part — computing a vector for all
+// 61 (and growing) precedents takes far longer than downloading the model
+// itself. Their text barely ever changes, so caching them keyed by id+text
+// means a click only ever has to embed the *project* text fresh — cutting
+// "Analyse" from ~15-30s down to roughly one inference call.
+const embeddingCache = new Map<string, Float32Array>();
+
+async function embed(
+  extract: FeatureExtractionPipeline,
+  cacheKey: string | null,
+  text: string,
+): Promise<Float32Array> {
+  if (cacheKey) {
+    const cached = embeddingCache.get(cacheKey);
+    if (cached) return cached;
+  }
+  const result = (await extract(text, { pooling: "mean", normalize: true })).data;
+  if (cacheKey) embeddingCache.set(cacheKey, result);
+  return result;
+}
+
 // Starts the model download/init as early as possible (e.g. on app load)
-// instead of waiting for the user to click "Analyse" — by the time they
-// actually click it, the model is likely already warm. Errors are swallowed
-// here; analyseInfluences() will surface and handle them properly when it
-// actually tries to use the model.
-export function warmUpSemanticModel(): void {
-  loadPipeline().catch(() => {
-    // Silent — this is just a head start, not the real attempt.
-  });
+// instead of waiting for the user to click "Analyse" — and pre-computes
+// every precedent's embedding in the background too, so by the time
+// "Analyse" is actually clicked there's only one new embedding left to do
+// (the project's own text). Errors are swallowed here; analyseInfluences()
+// surfaces and handles them properly when it actually tries to use the model.
+export function warmUpSemanticModel(precedents: Precedent[] = []): void {
+  loadPipeline()
+    .then(async (extract) => {
+      for (const p of precedents) {
+        await embed(extract, `${p.id}::${precedentText(p)}`, precedentText(p));
+      }
+    })
+    .catch(() => {
+      // Silent — this is just a head start, not the real attempt.
+    });
 }
 
 function cosineSimilarity(a: Float32Array, b: Float32Array): number {
@@ -79,12 +107,14 @@ export async function semanticAnalyse(
 ): Promise<AnalyseResult> {
   const extract = await loadPipeline();
 
-  const projectEmbedding = (await extract(projectText(project), { pooling: "mean", normalize: true }))
-    .data;
+  // Project text changes every time the concept is edited, so it's never
+  // cached — but it's only one call either way.
+  const projectEmbedding = await embed(extract, null, projectText(project));
 
   const scored = await Promise.all(
     precedents.map(async (p) => {
-      const embedding = (await extract(precedentText(p), { pooling: "mean", normalize: true })).data;
+      const text = precedentText(p);
+      const embedding = await embed(extract, `${p.id}::${text}`, text);
       const score = cosineSimilarity(projectEmbedding, embedding);
       return { p, score };
     }),

@@ -41,10 +41,12 @@ function AppShell() {
   const allTags = useMemo(() => allTagsInUse(precedents, project), [precedents, project]);
 
   // Start downloading the free on-device AI model as soon as the app opens,
-  // not when "Analyse" is clicked — by then it's likely already warm.
+  // and pre-embed every precedent in the background too — by the time
+  // "Analyse" is clicked, only the project's own text is left to embed.
+  // Re-runs (cheaply, via the embedding cache) if precedents change.
   useEffect(() => {
-    warmUpSemanticModel();
-  }, []);
+    warmUpSemanticModel(precedents);
+  }, [precedents]);
 
   const chosenHexSet = useMemo(
     () => new Set((project.chosenSwatchHexes ?? []).map((h) => h.toLowerCase())),
@@ -408,8 +410,9 @@ function AppShell() {
 
               {analysing && (
                 <p className="text-[12px] text-ink-tertiary">
-                  Analysing your concept… first run downloads a small free AI model (~45MB, cached
-                  after this) — can take a few seconds. Taking you to Library once it's done.
+                  Analysing your concept with a free on-device AI model… the first run can take up
+                  to 30 seconds (downloading + thinking through every precedent), much faster after
+                  that. Taking you to Library once it's done.
                 </p>
               )}
 

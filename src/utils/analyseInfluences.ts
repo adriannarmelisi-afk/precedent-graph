@@ -123,7 +123,11 @@ async function claudeAnalyse(project: Project, precedents: Precedent[]): Promise
 // configured (kept for flexibility, never required). Local tag-overlap is
 // the last-resort fallback if the in-browser model can't load at all (e.g.
 // no network for the one-time download, or an unsupported browser).
-const SEMANTIC_TIMEOUT_MS = 12_000;
+// Measured in testing: a fully cold run (download + init + embedding all 61
+// precedents) genuinely takes 20-35s. A short timeout here was cutting off
+// real, successful runs before they could finish — this only needs to catch
+// a truly stuck/blocked connection, not a normal cold start.
+const SEMANTIC_TIMEOUT_MS = 60_000;
 
 function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
   return Promise.race([
