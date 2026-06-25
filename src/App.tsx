@@ -200,7 +200,7 @@ function AppShell() {
       <header className="flex h-14 shrink-0 items-center justify-between border-b border-hairline bg-surface-1 px-6">
         <div className="flex items-baseline gap-3">
           <span className="font-display text-[15px] font-semibold tracking-tight text-ink">
-            Precedent Graph
+            Concept Constellation
           </span>
           <span className="text-xs text-ink-tertiary">
             {precedents.length} precedents · {influenceCount} influences
@@ -408,7 +408,7 @@ function AppShell() {
           {activeView === "project" && (
             <div className="mx-auto flex max-w-2xl flex-col gap-6">
               <ProjectHero
-                title={project.title}
+                projectTitle={project.title}
                 precedentCount={precedents.length}
                 influenceCount={influenceCount}
                 onOpenLibrary={() => setActiveView("library")}
