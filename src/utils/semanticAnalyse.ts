@@ -24,6 +24,17 @@ function loadPipeline(): Promise<FeatureExtractionPipeline> {
   return pipelinePromise;
 }
 
+// Starts the model download/init as early as possible (e.g. on app load)
+// instead of waiting for the user to click "Analyse" — by the time they
+// actually click it, the model is likely already warm. Errors are swallowed
+// here; analyseInfluences() will surface and handle them properly when it
+// actually tries to use the model.
+export function warmUpSemanticModel(): void {
+  loadPipeline().catch(() => {
+    // Silent — this is just a head start, not the real attempt.
+  });
+}
+
 function cosineSimilarity(a: Float32Array, b: Float32Array): number {
   // Both vectors are already L2-normalised by the pipeline, so the dot
   // product alone equals cosine similarity — but dividing through anyway

@@ -123,12 +123,27 @@ async function claudeAnalyse(project: Project, precedents: Precedent[]): Promise
 // configured (kept for flexibility, never required). Local tag-overlap is
 // the last-resort fallback if the in-browser model can't load at all (e.g.
 // no network for the one-time download, or an unsupported browser).
+const SEMANTIC_TIMEOUT_MS = 12_000;
+
+function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
+  return Promise.race([
+    promise,
+    new Promise<T>((_, reject) =>
+      setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms),
+    ),
+  ]);
+}
+
 export async function analyseInfluences(
   project: Project,
   precedents: Precedent[],
 ): Promise<AnalyseOutcome> {
   try {
-    const result = await semanticAnalyse(project, precedents);
+    const result = await withTimeout(
+      semanticAnalyse(project, precedents),
+      SEMANTIC_TIMEOUT_MS,
+      "On-device AI model",
+    );
     return { result, source: "semantic" };
   } catch (err) {
     // Model failed to load (no network for the one-time download, the host

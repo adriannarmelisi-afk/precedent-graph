@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ConnectionStrengthList } from "./components/graph/ConnectionStrengthList";
 import { PrecedentCard } from "./components/precedent/PrecedentCard";
 import { PrecedentForm } from "./components/precedent/PrecedentForm";
@@ -28,6 +28,7 @@ import { usePalette } from "./hooks/usePalette";
 import { useMaterialPalette } from "./hooks/useMaterialPalette";
 import { allTagsInUse, tagAccentColour } from "./utils/tagUtils";
 import { analyseInfluences } from "./utils/analyseInfluences";
+import { warmUpSemanticModel } from "./utils/semanticAnalyse";
 
 function AppShell() {
   const { state, dispatch } = useStore();
@@ -38,6 +39,12 @@ function AppShell() {
   const { precedents, project, ui } = state;
   const projectTags = useMemo(() => new Set(project.tags), [project.tags]);
   const allTags = useMemo(() => allTagsInUse(precedents, project), [precedents, project]);
+
+  // Start downloading the free on-device AI model as soon as the app opens,
+  // not when "Analyse" is clicked — by then it's likely already warm.
+  useEffect(() => {
+    warmUpSemanticModel();
+  }, []);
 
   const chosenHexSet = useMemo(
     () => new Set((project.chosenSwatchHexes ?? []).map((h) => h.toLowerCase())),
@@ -401,7 +408,8 @@ function AppShell() {
 
               {analysing && (
                 <p className="text-[12px] text-ink-tertiary">
-                  Analysing your concept… taking you to Library once it's done.
+                  Analysing your concept… first run downloads a small free AI model (~45MB, cached
+                  after this) — can take a few seconds. Taking you to Library once it's done.
                 </p>
               )}
 
