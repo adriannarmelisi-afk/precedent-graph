@@ -641,7 +641,7 @@ function AppShell() {
                   {exporting ? "Exporting…" : "Download PNG"}
                 </button>
               </div>
-              <div className="overflow-auto rounded-lg border border-hairline bg-surface-3 p-6">
+              <div className="flex justify-center overflow-auto rounded-lg border border-hairline bg-surface-3 p-6">
                 <StyleKitExport
                   ref={sheetRef}
                   project={project}
