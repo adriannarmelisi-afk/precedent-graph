@@ -1,9 +1,19 @@
-// Assigns one palette colour per element category in the bundled sample
-// elevation SVG. Categories (people, trees, windows, fence, etc.) come
-// straight from a hand-coloured reference drawing — see the data-cat
-// attributes baked into src/assets/streetscape-elevation.svg — rather than
-// pixel-level guesswork, so there's no bleed between e.g. a window and the
-// person standing in front of it.
+// Assigns palette colours across the bundled sample elevation SVG.
+// Categories (people, trees, windows, fence, etc.) come straight from a
+// hand-coloured reference drawing — see the data-cat attributes baked into
+// src/assets/streetscape-elevation.svg — rather than pixel-level guesswork,
+// so there's no bleed between e.g. a window and the person standing in
+// front of it.
+//
+// The colour logic deliberately isn't "trees=green, brick=orange": real
+// architectural presentation drawings mostly keep the building in one
+// cohesive ink tone (the original black-and-white export already shares a
+// single grey across every category, varying only line weight) and reserve
+// a bold, disproportionate accent for entourage — people, cars, scale
+// figures — precisely so they draw the eye against an otherwise quiet
+// drawing. This mirrors that: the building reads as one tone, landscape
+// gets a second supporting tone, and people get the palette's standout
+// colour.
 
 export type Category =
   | "other"
@@ -19,35 +29,18 @@ export type Category =
   | "roof"
   | "grass";
 
-// What each category is "looking for" in a palette colour, so the result
-// reads as a deliberate, graphically sensible choice rather than a strict
-// dark-to-light ramp: trees/garden/grass want green if the palette has it,
-// chimney wants a warm brick-like tone, people get whichever colour is most
-// vivid (so the figures pop), and the structural categories (walls,
-// windows, outlines) just want enough darkness to stay legible. Listed in
-// priority order — earlier categories claim their best match first, so
-// "trees" doesn't lose the only green to "garden" before it gets a turn.
-interface CategorySpec {
-  category: Category;
-  hue?: number; // target hue (0-360) to match against, if this category has a "natural" colour
-  lightness?: number; // target lightness (0-1) to match against when hue doesn't apply (or as a tiebreaker)
-  preferSaturated?: boolean; // pick the most vivid remaining colour, regardless of hue/lightness
-}
-
-const CATEGORY_SPECS: CategorySpec[] = [
-  { category: "people", preferSaturated: true },
-  { category: "trees", hue: 120, lightness: 0.3 },
-  { category: "chimney", hue: 20, lightness: 0.4 },
-  { category: "garden", hue: 110, lightness: 0.5 },
-  { category: "grass", hue: 90, lightness: 0.65 },
-  { category: "other", lightness: 0.15 },
-  { category: "windows", lightness: 0.25 },
-  { category: "wall", lightness: 0.32 },
-  { category: "plinth", lightness: 0.42 },
-  { category: "fence", lightness: 0.55 },
-  { category: "roof", lightness: 0.7 },
-  { category: "gridlines", lightness: 0.8 },
+const STRUCTURE_CATEGORIES: Category[] = [
+  "other",
+  "windows",
+  "wall",
+  "chimney",
+  "fence",
+  "plinth",
+  "gridlines",
+  "roof",
 ];
+const LANDSCAPE_CATEGORIES: Category[] = ["trees", "garden", "grass"];
+const ACCENT_CATEGORIES: Category[] = ["people"];
 
 function hexToRgb(hex: string): [number, number, number] {
   const clean = hex.replace("#", "");
@@ -65,6 +58,10 @@ function rgbToHex([r, g, b]: number[]): string {
       .map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0"))
       .join("")
   );
+}
+
+function luminance([r, g, b]: number[]): number {
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 }
 
 function rgbToHsl([r, g, b]: number[]): [number, number, number] {
@@ -99,56 +96,50 @@ function hslToRgb([h, s, l]: [number, number, number]): [number, number, number]
 }
 
 // Extracted palettes are often dustier/lower-saturation than the source
-// image looks at a glance — boosting saturation makes the recolour read as
-// vivid as the palette's hues allow, instead of faithfully reproducing a
-// muted, washed-out swatch.
+// image looks at a glance — boosting saturation makes the accent colour
+// read as vivid as the palette's hues allow, instead of a washed-out
+// swatch that fails to stand out against the structure tone.
 function boostSaturation(rgb: [number, number, number], factor: number): [number, number, number] {
   const [h, s, l] = rgbToHsl(rgb);
   return hslToRgb([h, Math.min(1, s * factor), l]);
-}
-
-function hueDistance(a: number, b: number): number {
-  const d = Math.abs(a - b) % 360;
-  return d > 180 ? 360 - d : d;
 }
 
 export function assignCategoryColours(
   paletteHexes: string[],
   seed = 0,
 ): Record<Category, string> {
-  const stops = paletteHexes.map((h) => boostSaturation(hexToRgb(h), 1.6));
-  const used = new Set<number>();
+  const stops = paletteHexes.map(hexToRgb);
+  const sortedBySaturation = [...stops].sort((a, b) => rgbToHsl(b)[1] - rgbToHsl(a)[1]);
+  const sortedByLuminance = [...stops].sort((a, b) => luminance(a) - luminance(b));
 
-  const pick = (spec: CategorySpec): [number, number, number] => {
-    const scored = stops
-      .map((s, i) => {
-        if (used.has(i) && used.size < stops.length) return { i, score: -Infinity };
-        const [h, sat, l] = rgbToHsl(s);
-        let score: number;
-        if (spec.preferSaturated) {
-          score = sat;
-        } else if (spec.hue !== undefined) {
-          // Hue match dominates; lightness only breaks ties between
-          // similarly-good hue matches, and only matters at all if the
-          // colour has enough saturation to actually read as that hue.
-          const hueScore = sat < 0.1 ? -1 : -hueDistance(h, spec.hue) / 180;
-          score = hueScore * 10 - Math.abs(l - (spec.lightness ?? 0.5));
-        } else {
-          score = -Math.abs(l - (spec.lightness ?? 0.5));
-        }
-        return { i, score };
-      })
-      .sort((a, b) => b.score - a.score);
+  // The structure tone is a fairly dark, low-key stop — enough to read
+  // clearly as linework. "Generate another version" picks among the few
+  // darkest stops instead of always the very darkest, for variety.
+  const structureTopN = Math.min(sortedByLuminance.length, 3);
+  const structureColour = rgbToHex(sortedByLuminance[seed % structureTopN]);
 
-    const topN = Math.min(scored.length, 3);
-    const chosen = scored[seed % topN];
-    used.add(chosen.i);
-    return stops[chosen.i];
-  };
+  // The landscape tone is a separate, mid-toned stop — distinct from the
+  // structure so trees/garden/grass read as their own layer, but still
+  // restrained rather than competing with the accent.
+  const remaining = stops.filter((s) => s !== sortedByLuminance[seed % structureTopN]);
+  const landscapeSorted = [...remaining].sort((a, b) => luminance(a) - luminance(b));
+  const midIdx = Math.floor(landscapeSorted.length / 2);
+  const landscapeTopN = Math.min(landscapeSorted.length, 3) || 1;
+  const landscapeColour = rgbToHex(
+    landscapeSorted[Math.min(landscapeSorted.length - 1, midIdx + (seed % landscapeTopN))] ??
+      sortedByLuminance[0],
+  );
+
+  // The accent is the palette's most saturated stop, boosted further so
+  // people/entourage genuinely pop against the otherwise quiet drawing —
+  // the "small disproportionate splash of colour" real elevations use to
+  // draw the eye to scale figures.
+  const accentTopN = Math.min(sortedBySaturation.length, 3);
+  const accentColour = rgbToHex(boostSaturation(sortedBySaturation[seed % accentTopN], 1.8));
 
   const result = {} as Record<Category, string>;
-  CATEGORY_SPECS.forEach((spec) => {
-    result[spec.category] = rgbToHex(pick(spec));
-  });
+  STRUCTURE_CATEGORIES.forEach((cat) => { result[cat] = structureColour; });
+  LANDSCAPE_CATEGORIES.forEach((cat) => { result[cat] = landscapeColour; });
+  ACCENT_CATEGORIES.forEach((cat) => { result[cat] = accentColour; });
   return result;
 }
