@@ -11,7 +11,7 @@ const ITEMS: { id: AppView; label: string }[] = [
   { id: "project", label: "Project" },
   { id: "library", label: "Library" },
   { id: "connections", label: "Connections" },
-  { id: "drawing", label: "Drawing" },
+  { id: "drawing", label: "Sample Drawing" },
   { id: "export", label: "Export" },
 ];
 
