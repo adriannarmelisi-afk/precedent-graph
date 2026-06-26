@@ -25,7 +25,18 @@ function loadInitialState(): AppState {
   if (raw) {
     try {
       const parsed = JSON.parse(raw) as AppState;
-      return { ...parsed, savedProjects: parsed.savedProjects ?? [] };
+      // The seed library grows over time (47 precedents at one point, 61
+      // now) — a browser that visited before a growth spurt has that
+      // smaller set persisted. Merge in any seed precedent whose id isn't
+      // already present, so returning visitors see the full library
+      // instead of being stuck on whatever snapshot they first loaded.
+      const existingIds = new Set(parsed.precedents.map((p) => p.id));
+      const missing = SEED_PRECEDENTS.filter((p) => !existingIds.has(p.id));
+      return {
+        ...parsed,
+        precedents: missing.length > 0 ? [...parsed.precedents, ...missing] : parsed.precedents,
+        savedProjects: parsed.savedProjects ?? [],
+      };
     } catch {
       // fall through to seed state if stored data is corrupt
     }
