@@ -41,7 +41,7 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
   }, [hexes.join(","), seed]);
 
   return (
-    <div className="mx-auto flex max-w-2xl flex-col gap-5">
+    <div className="flex w-full flex-col gap-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
