@@ -19,23 +19,34 @@ export type Category =
   | "roof"
   | "grass";
 
-// Dark to light, ranked by the luminance of each category's original
-// reference colour — keeps the drawing's own light/dark hierarchy (e.g.
-// "trees" reads darker than "roof") even once every category is remapped
-// onto a different palette.
-export const CATEGORY_ORDER: Category[] = [
-  "other",
-  "trees",
-  "windows",
-  "wall",
-  "chimney",
-  "people",
-  "fence",
-  "plinth",
-  "garden",
-  "gridlines",
-  "roof",
-  "grass",
+// What each category is "looking for" in a palette colour, so the result
+// reads as a deliberate, graphically sensible choice rather than a strict
+// dark-to-light ramp: trees/garden/grass want green if the palette has it,
+// chimney wants a warm brick-like tone, people get whichever colour is most
+// vivid (so the figures pop), and the structural categories (walls,
+// windows, outlines) just want enough darkness to stay legible. Listed in
+// priority order — earlier categories claim their best match first, so
+// "trees" doesn't lose the only green to "garden" before it gets a turn.
+interface CategorySpec {
+  category: Category;
+  hue?: number; // target hue (0-360) to match against, if this category has a "natural" colour
+  lightness?: number; // target lightness (0-1) to match against when hue doesn't apply (or as a tiebreaker)
+  preferSaturated?: boolean; // pick the most vivid remaining colour, regardless of hue/lightness
+}
+
+const CATEGORY_SPECS: CategorySpec[] = [
+  { category: "people", preferSaturated: true },
+  { category: "trees", hue: 120, lightness: 0.3 },
+  { category: "chimney", hue: 20, lightness: 0.4 },
+  { category: "garden", hue: 110, lightness: 0.5 },
+  { category: "grass", hue: 90, lightness: 0.65 },
+  { category: "other", lightness: 0.15 },
+  { category: "windows", lightness: 0.25 },
+  { category: "wall", lightness: 0.32 },
+  { category: "plinth", lightness: 0.42 },
+  { category: "fence", lightness: 0.55 },
+  { category: "roof", lightness: 0.7 },
+  { category: "gridlines", lightness: 0.8 },
 ];
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -54,10 +65,6 @@ function rgbToHex([r, g, b]: number[]): string {
       .map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, "0"))
       .join("")
   );
-}
-
-function luminance([r, g, b]: number[]): number {
-  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 }
 
 function rgbToHsl([r, g, b]: number[]): [number, number, number] {
@@ -100,53 +107,48 @@ function boostSaturation(rgb: [number, number, number], factor: number): [number
   return hslToRgb([h, Math.min(1, s * factor), l]);
 }
 
-function sortByLuminance(stops: [number, number, number][]): [number, number, number][] {
-  return [...stops].sort((a, b) => luminance(a) - luminance(b));
-}
-
-// Deterministic, seedable shuffle (mulberry32) of everything *between* the
-// darkest and lightest stop, so "generate another version" gives a
-// genuinely different look using the same palette, while the overall
-// dark-to-light hierarchy (darkest category still darkest, lightest still
-// lightest) stays intact and the result stays reproducible for a given seed.
-function shuffleMiddle(stops: [number, number, number][], seed: number): [number, number, number][] {
-  // seed 0 (the initial/default state) stays unshuffled, so the first load
-  // shows the palette's own natural dark-to-light order; only "generate
-  // another version" (seed >= 1) reshuffles the middle for variety.
-  if (stops.length <= 2 || seed === 0) return stops;
-  const first = stops[0];
-  const last = stops[stops.length - 1];
-  const middle = stops.slice(1, -1);
-
-  let s = seed >>> 0;
-  const rand = () => {
-    s = (s + 0x6d2b79f5) >>> 0;
-    let t = s;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-  for (let i = middle.length - 1; i > 0; i--) {
-    const j = Math.floor(rand() * (i + 1));
-    [middle[i], middle[j]] = [middle[j], middle[i]];
-  }
-  return [first, ...middle, last];
+function hueDistance(a: number, b: number): number {
+  const d = Math.abs(a - b) % 360;
+  return d > 180 ? 360 - d : d;
 }
 
 export function assignCategoryColours(
   paletteHexes: string[],
   seed = 0,
 ): Record<Category, string> {
-  const stops = shuffleMiddle(
-    sortByLuminance(paletteHexes.map((h) => boostSaturation(hexToRgb(h), 1.6))),
-    seed,
-  );
+  const stops = paletteHexes.map((h) => boostSaturation(hexToRgb(h), 1.6));
+  const used = new Set<number>();
+
+  const pick = (spec: CategorySpec): [number, number, number] => {
+    const scored = stops
+      .map((s, i) => {
+        if (used.has(i) && used.size < stops.length) return { i, score: -Infinity };
+        const [h, sat, l] = rgbToHsl(s);
+        let score: number;
+        if (spec.preferSaturated) {
+          score = sat;
+        } else if (spec.hue !== undefined) {
+          // Hue match dominates; lightness only breaks ties between
+          // similarly-good hue matches, and only matters at all if the
+          // colour has enough saturation to actually read as that hue.
+          const hueScore = sat < 0.1 ? -1 : -hueDistance(h, spec.hue) / 180;
+          score = hueScore * 10 - Math.abs(l - (spec.lightness ?? 0.5));
+        } else {
+          score = -Math.abs(l - (spec.lightness ?? 0.5));
+        }
+        return { i, score };
+      })
+      .sort((a, b) => b.score - a.score);
+
+    const topN = Math.min(scored.length, 3);
+    const chosen = scored[seed % topN];
+    used.add(chosen.i);
+    return stops[chosen.i];
+  };
 
   const result = {} as Record<Category, string>;
-  CATEGORY_ORDER.forEach((cat, i) => {
-    const p = CATEGORY_ORDER.length === 1 ? 0 : i / (CATEGORY_ORDER.length - 1);
-    const idx = Math.round(p * (stops.length - 1));
-    result[cat] = rgbToHex(stops[idx]);
+  CATEGORY_SPECS.forEach((spec) => {
+    result[spec.category] = rgbToHex(pick(spec));
   });
   return result;
 }
