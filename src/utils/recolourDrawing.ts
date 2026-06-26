@@ -172,36 +172,38 @@ function classifyMaskPixel(r: number, g: number, b: number): MaskCategory {
 
 // Picks one flat colour per element category from the palette, so each
 // reads as a single deliberate colour instead of a scattered per-pixel
-// gradient. "openings" (the structural windows/doors/floor band) gets the
-// darkest stop for the strongest contrast; "roofAndTrees" gets whichever
-// stop is closest to green; "people" gets the most saturated stop, so the
-// figures read as a deliberate accent; the remaining two categories take
-// what's left, ordered by lightness.
-function maskCategoryColours(stops: [number, number, number][]): Record<MaskCategory, [number, number, number]> {
+// gradient. Each category is scored against every remaining stop (closest
+// hue, highest saturation, etc.) and normally takes the single best match —
+// but "generate another version" needs the result to actually change, so
+// `seed` picks among the top few close contenders instead of always #1.
+// With only one or two palette colours there's nothing to vary, which is
+// expected: there's no other reasonable colour to assign.
+function maskCategoryColours(
+  stops: [number, number, number][],
+  seed: number,
+): Record<MaskCategory, [number, number, number]> {
   const used = new Set<number>();
   const pick = (predicate: (rgb: [number, number, number]) => number, fallbackT: number) => {
-    let bestIdx = -1;
-    let bestScore = -Infinity;
-    stops.forEach((s, i) => {
-      if (used.has(i)) return;
-      const score = predicate(s);
-      if (score > bestScore) {
-        bestScore = score;
-        bestIdx = i;
-      }
-    });
-    if (bestIdx === -1) bestIdx = Math.min(stops.length - 1, Math.round((stops.length - 1) * fallbackT));
-    used.add(bestIdx);
-    return stops[bestIdx];
+    const scored = stops
+      .map((s, i) => ({ i, score: used.has(i) ? -Infinity : predicate(s) }))
+      .filter((x) => x.score > -Infinity)
+      .sort((a, b) => b.score - a.score);
+
+    let chosenIdx: number;
+    if (scored.length === 0) {
+      chosenIdx = Math.min(stops.length - 1, Math.round((stops.length - 1) * fallbackT));
+    } else {
+      const topN = Math.min(scored.length, 3);
+      chosenIdx = scored[seed % topN].i;
+    }
+    used.add(chosenIdx);
+    return stops[chosenIdx];
   };
 
-  // "openings" (windows/doors/floor band) always gets the darkest stop, for
-  // the strongest structural contrast — everything else is picked by hue
-  // closeness or saturation from whatever's left, each with a fixed
-  // fallback position so results stay deterministic for a given palette
-  // (no randomness — repeat calls with the same palette give the same look).
-  used.add(0);
-  const openings = stops[0];
+  // "openings" (windows/doors/floor band) takes one of the darkest stops,
+  // for strong structural contrast; everything else is picked by hue
+  // closeness or saturation from whatever's left.
+  const openings = pick((s) => -luminance(s), 0);
 
   const roofAndTrees = pick((s) => {
     const [h, sat] = rgbToHsl(s);
@@ -305,7 +307,7 @@ export async function recolourImage(
     if (!maskCtx) throw new Error("Canvas isn't supported in this browser");
     maskCtx.drawImage(maskImg, 0, 0, w, h);
     maskData = maskCtx.getImageData(0, 0, w, h).data;
-    catColours = maskCategoryColours(stops);
+    catColours = maskCategoryColours(stops, seed);
   }
 
   const { lo, hi } = computeContrastRange(data);

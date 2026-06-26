@@ -76,6 +76,16 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
         <p className="rounded-md border border-hairline bg-surface-2 p-3 text-[12px] text-primary">{error}</p>
       ) : (
         <div className="rounded-lg border border-hairline bg-surface-1 p-5">
+          <div className="mb-4 flex flex-wrap gap-1.5">
+            {activePalette.map((s, i) => (
+              <span
+                key={s.hex + i}
+                className="h-8 w-8 shrink-0 rounded border border-hairline"
+                style={{ backgroundColor: s.hex }}
+                title={`${s.label || s.hex} — ${s.hex}`}
+              />
+            ))}
+          </div>
           {resultUrl ? (
             <img src={resultUrl} alt="Sample plan recoloured with your palette" className="w-full rounded-md" />
           ) : (
