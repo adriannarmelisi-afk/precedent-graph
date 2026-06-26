@@ -129,96 +129,6 @@ function colourForStretched(stops: [number, number, number][], t: number): [numb
   return mix(lightestStop, WHITE, fade);
 }
 
-function colourForCategoryPixel(categoryColour: [number, number, number], t: number): [number, number, number] {
-  if (t <= INK_END) return categoryColour;
-  if (t >= PAPER_START) return WHITE;
-  const fade = (t - INK_END) / (PAPER_START - INK_END);
-  return mix(categoryColour, WHITE, fade);
-}
-
-// Categories read straight off a hand-coded reference image (see
-// STREETSCAPE_MASK_SRC below) rather than guessed rectangles, so figures
-// behind a window, fences next to people etc. are pixel-accurate instead of
-// bleeding into whatever a loose box happened to cover.
-export type MaskCategory = "people" | "openings" | "roofAndTrees" | "fenceAndChimney" | "plinth" | "other";
-
-const MASK_HUE_CENTERS: { category: MaskCategory; hue: number }[] = [
-  { category: "people", hue: 20 }, // walker, dogs, cyclist + bike, grass tufts
-  { category: "roofAndTrees", hue: 85 }, // roof cladding/hatching, tree canopies, posts
-  { category: "openings", hue: 255 }, // ground-floor windows, door, eave/floor band, birds
-  { category: "fenceAndChimney", hue: 305 }, // fence pickets, chimney brick
-  { category: "plinth", hue: 335 }, // podium/plinth base walls
-];
-
-function hueDistance(a: number, b: number): number {
-  const d = Math.abs(a - b) % 360;
-  return d > 180 ? 360 - d : d;
-}
-
-function classifyMaskPixel(r: number, g: number, b: number): MaskCategory {
-  const [h, s, l] = rgbToHsl([r, g, b]);
-  if (s < 0.08 || l > 0.97) return "other"; // uncoded / near-white in the reference
-  let best: MaskCategory = "other";
-  let bestDist = Infinity;
-  for (const { category, hue } of MASK_HUE_CENTERS) {
-    const dist = hueDistance(h, hue);
-    if (dist < bestDist) {
-      bestDist = dist;
-      best = category;
-    }
-  }
-  return best;
-}
-
-// Picks one flat colour per element category from the palette, so each
-// reads as a single deliberate colour instead of a scattered per-pixel
-// gradient. Each category is scored against every remaining stop (closest
-// hue, highest saturation, etc.) and normally takes the single best match —
-// but "generate another version" needs the result to actually change, so
-// `seed` picks among the top few close contenders instead of always #1.
-// With only one or two palette colours there's nothing to vary, which is
-// expected: there's no other reasonable colour to assign.
-function maskCategoryColours(
-  stops: [number, number, number][],
-  seed: number,
-): Record<MaskCategory, [number, number, number]> {
-  const used = new Set<number>();
-  const pick = (predicate: (rgb: [number, number, number]) => number, fallbackT: number) => {
-    const scored = stops
-      .map((s, i) => ({ i, score: used.has(i) ? -Infinity : predicate(s) }))
-      .filter((x) => x.score > -Infinity)
-      .sort((a, b) => b.score - a.score);
-
-    let chosenIdx: number;
-    if (scored.length === 0) {
-      chosenIdx = Math.min(stops.length - 1, Math.round((stops.length - 1) * fallbackT));
-    } else {
-      const topN = Math.min(scored.length, 3);
-      chosenIdx = scored[seed % topN].i;
-    }
-    used.add(chosenIdx);
-    return stops[chosenIdx];
-  };
-
-  // "openings" (windows/doors/floor band) takes one of the darkest stops,
-  // for strong structural contrast; everything else is picked by hue
-  // closeness or saturation from whatever's left.
-  const openings = pick((s) => -luminance(s), 0);
-
-  const roofAndTrees = pick((s) => {
-    const [h, sat] = rgbToHsl(s);
-    return sat < 0.12 ? -Infinity : -hueDistance(h, 120);
-  }, 0.7);
-
-  const people = pick((s) => rgbToHsl(s)[1], 0.3);
-
-  const fenceAndChimney = pick((s) => -hueDistance(rgbToHsl(s)[0], 300), 0.5);
-
-  const plinth = pick((s) => -hueDistance(rgbToHsl(s)[0], 335), 0.85);
-
-  return { openings, roofAndTrees, people, fenceAndChimney, plinth, other: openings };
-}
-
 function loadImage(src: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
     const img = new Image();
@@ -263,20 +173,15 @@ function computeContrastRange(data: Uint8ClampedArray): { lo: number; hi: number
   return { lo: lo / 255, hi: hi / 255 };
 }
 
-// Both the bundled drawing and its colour-coded mask are well under this —
-// so in practice neither is ever downscaled and every recolour reads pixels
-// 1:1 from the original files. Recolouring always starts fresh from those
-// pristine sources (never from a previous recoloured result), so running it
-// again with a different palette can't compound any loss — each run is the
-// same quality as the first.
+// The bundled drawing is well under this cap — so in practice it's never
+// downscaled and every recolour reads pixels 1:1 from the original file.
+// Recolouring always starts fresh from that pristine source (never from a
+// previous recoloured result), so running it again with a different
+// palette can't compound any loss — each run is the same quality as the
+// first.
 const MAX_DIMENSION = 3000;
 
-export async function recolourImage(
-  src: string,
-  paletteHexes: string[],
-  seed = 0,
-  maskSrc?: string,
-): Promise<string> {
+export async function recolourImage(src: string, paletteHexes: string[], seed = 0): Promise<string> {
   if (paletteHexes.length === 0) throw new Error("Pick at least one palette colour first");
   const stops = shuffleMiddle(sortStops(paletteHexes), seed);
 
@@ -296,34 +201,13 @@ export async function recolourImage(
   const imageData = ctx.getImageData(0, 0, w, h);
   const { data } = imageData;
 
-  let maskData: Uint8ClampedArray | null = null;
-  let catColours: Record<MaskCategory, [number, number, number]> | null = null;
-  if (maskSrc) {
-    const maskImg = await loadImage(maskSrc);
-    const maskCanvas = document.createElement("canvas");
-    maskCanvas.width = w;
-    maskCanvas.height = h;
-    const maskCtx = maskCanvas.getContext("2d");
-    if (!maskCtx) throw new Error("Canvas isn't supported in this browser");
-    maskCtx.drawImage(maskImg, 0, 0, w, h);
-    maskData = maskCtx.getImageData(0, 0, w, h).data;
-    catColours = maskCategoryColours(stops, seed);
-  }
-
   const { lo, hi } = computeContrastRange(data);
   const range = Math.max(0.001, hi - lo);
 
   for (let i = 0; i < data.length; i += 4) {
     const l = luminance([data[i], data[i + 1], data[i + 2]]);
     const stretched = Math.min(1, Math.max(0, (l - lo) / range));
-
-    let r: number, g: number, b: number;
-    if (maskData && catColours) {
-      const category = classifyMaskPixel(maskData[i], maskData[i + 1], maskData[i + 2]);
-      [r, g, b] = colourForCategoryPixel(catColours[category], stretched);
-    } else {
-      [r, g, b] = colourForStretched(stops, stretched);
-    }
+    const [r, g, b] = colourForStretched(stops, stretched);
     data[i] = r;
     data[i + 1] = g;
     data[i + 2] = b;
@@ -332,10 +216,3 @@ export async function recolourImage(
   ctx.putImageData(imageData, 0, 0);
   return canvas.toDataURL("image/png");
 }
-
-// A hand-coloured copy of streetscape-elevation.jpg, pixel-aligned, where
-// people/dogs/bicycle are orange, roof cladding + trees + posts are green,
-// windows/doors/the eave band + birds are blue, fence + chimney are purple,
-// and the plinth/podium walls are pink. Used purely to classify each pixel
-// of the real drawing by category — never shown to the user directly.
-export const STREETSCAPE_MASK_SRC = "/samples/streetscape-elevation-mask.png";
