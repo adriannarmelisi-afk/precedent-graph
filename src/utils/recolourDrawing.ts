@@ -117,8 +117,13 @@ function mix(a: [number, number, number], b: [number, number, number], t: number
 // Linework gets the full palette gradient; paper always fades to true white
 // rather than the palette's lightest swatch, so the page background stays
 // white no matter what palette is loaded — only the lines pick up colour.
-const INK_END = 0.85; // stretched values below this are "ink": full gradient
-const PAPER_START = 0.97; // stretched values above this are pure white
+// A narrow ink→paper band keeps the transition crisp — too wide a band
+// (the original 0.85→0.97) spreads anti-aliased edge pixels across more
+// of the gradient, reading as a soft grey halo around every line instead
+// of a clean edge, which is what made the recolour look lower quality
+// than the original even though the underlying resolution is identical.
+const INK_END = 0.9; // stretched values below this are "ink": full gradient
+const PAPER_START = 0.94; // stretched values above this are pure white
 const WHITE: [number, number, number] = [255, 255, 255];
 
 function colourForStretched(stops: [number, number, number][], t: number): [number, number, number] {
