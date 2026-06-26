@@ -300,6 +300,31 @@ function AppShell() {
                 </button>
               </div>
 
+              {influenceCount > 0 && (
+                <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-md border border-hairline bg-surface-2 px-3 py-2.5">
+                  <span className="text-[12px] text-ink-subtle">
+                    {influenceCount} influence{influenceCount === 1 ? "" : "s"} marked — {palette.length}-colour
+                    palette ready
+                  </span>
+                  <div className="flex shrink-0 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveView("drawing")}
+                      className="rounded-md border border-hairline-strong px-2.5 py-1 text-[11px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary"
+                    >
+                      See it on the sample drawing →
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setActiveView("export")}
+                      className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-on-primary transition-colors hover:bg-primary-hover"
+                    >
+                      Export your style kit →
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {taggedGroups && (
                 <div className="mb-5 flex items-center justify-between rounded-md border border-primary bg-primary-soft px-3 py-2">
                   <span className="text-[12px] text-primary">
@@ -438,7 +463,7 @@ function AppShell() {
           )}
 
           {activeView === "project" && (
-            <div className="mx-auto flex max-w-2xl flex-col gap-6">
+            <div className="flex flex-col gap-6">
               <ProjectHero
                 projectTitle={project.title}
                 precedentCount={precedents.length}
@@ -446,6 +471,7 @@ function AppShell() {
                 onOpenLibrary={() => setActiveView("library")}
               />
 
+              <div className="mx-auto flex w-full max-w-2xl flex-col gap-6">
               <ProjectPanel onAnalyse={handleAnalyse} />
 
               {analysing && (
@@ -565,6 +591,7 @@ function AppShell() {
                     ))}
                   </div>
                 )}
+              </div>
               </div>
             </div>
           )}
