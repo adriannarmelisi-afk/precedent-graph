@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { PaletteEntry } from "../../hooks/usePalette";
-import { recolourImage, STREETSCAPE_MASK_SRC } from "../../utils/recolourDrawing";
+import { recolourImage } from "../../utils/recolourDrawing";
 
 interface DrawingRecolourProps {
   palette: PaletteEntry[];
@@ -27,7 +27,7 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
     }
     let cancelled = false;
     setError(null);
-    recolourImage(SAMPLE_SRC, hexes, seed, STREETSCAPE_MASK_SRC)
+    recolourImage(SAMPLE_SRC, hexes, seed)
       .then((url) => {
         if (!cancelled) setResultUrl(url);
       })
@@ -51,9 +51,9 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
             </span>
           </h2>
           <p className="mt-1 text-[12px] leading-relaxed text-ink-tertiary">
-            A real architectural drawing, recoloured live from your palette — people, roof &amp; trees,
-            windows &amp; doors, fences &amp; chimney, and the podium walls each pick up one deliberate
-            colour, read straight off a hand-coded reference rather than guessed boxes.
+            A real architectural drawing, recoloured live from your palette — linework picks up your
+            darkest swatch and the paper picks up your lightest, with anything in between blended
+            smoothly across the rest of your palette.
           </p>
         </div>
         {activePalette.length > 0 && (
