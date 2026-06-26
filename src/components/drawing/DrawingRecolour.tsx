@@ -1,43 +1,29 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PaletteEntry } from "../../hooks/usePalette";
-import { recolourImage } from "../../utils/recolourDrawing";
+import { assignCategoryColours } from "../../utils/svgRecolour";
+import elevationSvg from "../../assets/streetscape-elevation.svg?raw";
 
 interface DrawingRecolourProps {
   palette: PaletteEntry[];
   chosenSwatches: PaletteEntry[];
 }
 
-// Stored as PNG (not JPEG) so it's never re-compressed — every recolour
-// reads pixels straight from this lossless source, so quality never
-// degrades, no matter how many times the palette changes.
-const SAMPLE_SRC = "/samples/streetscape-elevation.png";
-
 export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProps) {
   const activePalette = chosenSwatches.length > 0 ? chosenSwatches : palette;
   const hexes = activePalette.map((s) => s.hex);
 
   const [seed, setSeed] = useState(0);
-  const [resultUrl, setResultUrl] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (hexes.length === 0) {
-      setResultUrl(null);
-      return;
-    }
-    let cancelled = false;
-    setError(null);
-    recolourImage(SAMPLE_SRC, hexes, seed)
-      .then((url) => {
-        if (!cancelled) setResultUrl(url);
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : "Couldn't recolour the sample drawing");
+    const svgEl = containerRef.current?.querySelector("svg");
+    if (!svgEl || hexes.length === 0) return;
+    const colours = assignCategoryColours(hexes, seed);
+    (Object.keys(colours) as (keyof typeof colours)[]).forEach((cat) => {
+      svgEl.querySelectorAll(`[data-cat="${cat}"]`).forEach((el) => {
+        (el as SVGElement).style.stroke = colours[cat];
       });
-    return () => {
-      cancelled = true;
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    });
   }, [hexes.join(","), seed]);
 
   return (
@@ -51,9 +37,9 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
             </span>
           </h2>
           <p className="mt-1 text-[12px] leading-relaxed text-ink-tertiary">
-            A real architectural drawing, recoloured live from your palette — linework picks up your
-            darkest swatch and the paper picks up your lightest, with anything in between blended
-            smoothly across the rest of your palette.
+            A real architectural drawing, recoloured live from your palette — people, trees, roof,
+            fence and every other hand-grouped element picks up one deliberate colour from your
+            palette. It's vector, so it stays crisp at any size.
           </p>
         </div>
         {activePalette.length > 0 && (
@@ -72,8 +58,6 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
         <p className="rounded-md border border-hairline bg-surface-2 p-3 text-[12px] text-ink-tertiary">
           No palette yet — mark some precedents as influences in the Library first to build one.
         </p>
-      ) : error ? (
-        <p className="rounded-md border border-hairline bg-surface-2 p-3 text-[12px] text-primary">{error}</p>
       ) : (
         <div className="rounded-lg border border-hairline bg-surface-1 p-5">
           <div className="mb-4 flex flex-wrap gap-1.5">
@@ -86,11 +70,11 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
               />
             ))}
           </div>
-          {resultUrl ? (
-            <img src={resultUrl} alt="Sample plan recoloured with your palette" className="w-full rounded-md" />
-          ) : (
-            <p className="text-[12px] text-ink-tertiary">Recolouring…</p>
-          )}
+          <div
+            ref={containerRef}
+            className="[&_svg]:block [&_svg]:h-auto [&_svg]:w-full"
+            dangerouslySetInnerHTML={{ __html: elevationSvg }}
+          />
         </div>
       )}
     </div>
