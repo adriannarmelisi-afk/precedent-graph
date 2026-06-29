@@ -14,6 +14,19 @@ interface DrawingRecolourProps {
 // staying pure outline the whole time.
 const STYLE_LABELS = ["Linework", "Glazed windows", "Shaded windows"] as const;
 
+// The source artwork's "windows" data-cat also covers the door, its
+// hardware, and the long datum trim band across the facade — filling the
+// whole category tints things that aren't glass. These are the actual
+// glass panes only, picked by hand from the artwork's coordinates, so the
+// fill lands exactly on the window panes and nowhere else.
+const GLASS_PANES = [
+  { x: 437.88, y: 581.09, width: 17.32, height: 34.98 },
+  { x: 461.81, y: 581.09, width: 17.32, height: 34.98 },
+  { x: 576.91, y: 581.15, width: 56.08, height: 34.24 },
+  { x: 682.99, y: 581.09, width: 18.83, height: 34.39 },
+  { x: 714.4, y: 581.09, width: 18.83, height: 34.39 },
+];
+
 export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProps) {
   const activePalette = chosenSwatches.length > 0 ? chosenSwatches : palette;
   const hexes = activePalette.map((s) => s.hex);
@@ -63,25 +76,31 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
       el.style.strokeWidth = "0.05px";
     });
 
-    // Reset any fills from a previous style before applying this one — only
-    // the closed shapes (rects/polygons) within a category take a fill
-    // sensibly; the rest of each category is open linework.
-    svgEl.querySelectorAll<SVGElement>("rect[data-cat], polygon[data-cat]").forEach((el) => {
-      el.style.fill = "none";
-    });
-    if (styleIndex === 1) {
-      // Glazed windows: a very light tint on the window panes only, like
-      // glass catching the palette's brightest note.
-      svgEl.querySelectorAll<SVGElement>('rect[data-cat="windows"]').forEach((el) => {
-        el.style.fill = colours.people;
-        el.style.fillOpacity = "0.12";
-      });
-    } else if (styleIndex === 2) {
-      // Shaded windows: a very light fill on the window panes only, like
-      // glass in shadow rather than flat outline.
-      svgEl.querySelectorAll<SVGElement>('rect[data-cat="windows"]').forEach((el) => {
-        el.style.fill = colours.wall;
-        el.style.fillOpacity = "0.15";
+    // Glass-pane fill lives in its own overlay group, drawn fresh each time,
+    // so it never touches the original artwork's fill (door, trim band,
+    // hardware) — only these exact panes can ever show a tint.
+    let overlay = svgEl.querySelector<SVGGElement>('[data-role="glass-overlay"]');
+    if (!overlay) {
+      overlay = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      overlay.setAttribute("data-role", "glass-overlay");
+      svgEl.appendChild(overlay);
+    }
+    overlay.innerHTML = "";
+    if (styleIndex === 1 || styleIndex === 2) {
+      // Glazed windows uses the accent tone; Shaded windows uses the
+      // structure tone — both kept very light so it reads as a tint, not a
+      // block of colour.
+      const fill = styleIndex === 1 ? colours.people : colours.wall;
+      const fillOpacity = styleIndex === 1 ? "0.12" : "0.15";
+      GLASS_PANES.forEach((pane) => {
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("x", String(pane.x));
+        rect.setAttribute("y", String(pane.y));
+        rect.setAttribute("width", String(pane.width));
+        rect.setAttribute("height", String(pane.height));
+        rect.setAttribute("fill", fill);
+        rect.setAttribute("fill-opacity", fillOpacity);
+        overlay!.appendChild(rect);
       });
     }
   }, [hexes.join(","), seed, styleIndex]);
