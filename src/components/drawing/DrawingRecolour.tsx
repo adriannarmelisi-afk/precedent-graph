@@ -17,6 +17,31 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
 
   useEffect(() => {
     const svgEl = containerRef.current?.querySelector("svg");
+    if (!svgEl) return;
+    // The artwork's drawn content doesn't fill the original viewBox evenly,
+    // which left it visibly off-centre in its box. Re-fit the viewBox to the
+    // bounds of the hand-categorised drawing elements (ignoring any
+    // decorative border/frame in the source file) so it centres.
+    const categorised = svgEl.querySelectorAll<SVGGraphicsElement>("[data-cat]");
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    categorised.forEach((el) => {
+      const b = el.getBBox();
+      minX = Math.min(minX, b.x);
+      minY = Math.min(minY, b.y);
+      maxX = Math.max(maxX, b.x + b.width);
+      maxY = Math.max(maxY, b.y + b.height);
+    });
+    if (!categorised.length) return;
+    const bbox = { x: minX, y: minY, width: maxX - minX, height: maxY - minY };
+    const pad = Math.max(bbox.width, bbox.height) * 0.04;
+    svgEl.setAttribute(
+      "viewBox",
+      `${bbox.x - pad} ${bbox.y - pad} ${bbox.width + pad * 2} ${bbox.height + pad * 2}`,
+    );
+  }, [activePalette.length > 0]);
+
+  useEffect(() => {
+    const svgEl = containerRef.current?.querySelector("svg");
     if (!svgEl || hexes.length === 0) return;
     const colours = assignCategoryColours(hexes, seed);
     (Object.keys(colours) as (keyof typeof colours)[]).forEach((cat) => {
@@ -27,7 +52,7 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
   }, [hexes.join(","), seed]);
 
   return (
-    <div className="flex w-full flex-col gap-5">
+    <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h2 className="text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
