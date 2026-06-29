@@ -12,7 +12,12 @@ interface DrawingRecolourProps {
 // remixes, so reshuffling doesn't just shuffle the same look — a couple of
 // the styles add solid fills (glazed glass, shadowed recesses) rather than
 // staying pure outline the whole time.
-const STYLE_LABELS = ["Linework", "Glazed windows", "Shaded windows"] as const;
+const STYLE_LABELS = [
+  "Linework",
+  "Glazed windows",
+  "Shaded windows",
+  "Shaded windows + datum band",
+] as const;
 
 // The source artwork's "windows" data-cat also covers the door, its
 // hardware, and the long datum trim band across the facade — filling the
@@ -26,6 +31,10 @@ const GLASS_PANES = [
   { x: 682.99, y: 581.09, width: 18.83, height: 34.39 },
   { x: 714.4, y: 581.09, width: 18.83, height: 34.39 },
 ];
+
+// The horizontal datum trim board running the full width of the facade,
+// just above the ground floor — its own separate fill, off by default.
+const DATUM_BAND = { x: 405.12, y: 559.97, width: 248.13, height: 9.95 };
 
 export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProps) {
   const activePalette = chosenSwatches.length > 0 ? chosenSwatches : palette;
@@ -86,22 +95,26 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
       svgEl.appendChild(overlay);
     }
     overlay.innerHTML = "";
-    if (styleIndex === 1 || styleIndex === 2) {
-      // Glazed windows uses the accent tone; Shaded windows uses the
+    const addFill = (pane: { x: number; y: number; width: number; height: number }, fill: string, fillOpacity: string) => {
+      const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      rect.setAttribute("x", String(pane.x));
+      rect.setAttribute("y", String(pane.y));
+      rect.setAttribute("width", String(pane.width));
+      rect.setAttribute("height", String(pane.height));
+      rect.setAttribute("fill", fill);
+      rect.setAttribute("fill-opacity", fillOpacity);
+      overlay!.appendChild(rect);
+    };
+    if (styleIndex === 1 || styleIndex === 2 || styleIndex === 3) {
+      // Glazed windows uses the accent tone; the shaded styles use the
       // structure tone — both kept very light so it reads as a tint, not a
       // block of colour.
       const fill = styleIndex === 1 ? colours.people : colours.wall;
       const fillOpacity = styleIndex === 1 ? "0.12" : "0.15";
-      GLASS_PANES.forEach((pane) => {
-        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
-        rect.setAttribute("x", String(pane.x));
-        rect.setAttribute("y", String(pane.y));
-        rect.setAttribute("width", String(pane.width));
-        rect.setAttribute("height", String(pane.height));
-        rect.setAttribute("fill", fill);
-        rect.setAttribute("fill-opacity", fillOpacity);
-        overlay!.appendChild(rect);
-      });
+      GLASS_PANES.forEach((pane) => addFill(pane, fill, fillOpacity));
+    }
+    if (styleIndex === 3) {
+      addFill(DATUM_BAND, colours.wall, "0.15");
     }
   }, [hexes.join(","), seed, styleIndex]);
 
