@@ -49,6 +49,12 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
         (el as SVGElement).style.stroke = colours[cat];
       });
     });
+    // Trees are drawn with much thinner linework than everything else in
+    // the source artwork, so even a darker tone reads as faint — nudge the
+    // stroke up a little so they hold their own against the building.
+    svgEl.querySelectorAll<SVGElement>('[data-cat="trees"]').forEach((el) => {
+      el.style.strokeWidth = "0.05px";
+    });
   }, [hexes.join(","), seed]);
 
   return (

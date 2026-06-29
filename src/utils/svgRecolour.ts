@@ -39,7 +39,7 @@ const STRUCTURE_CATEGORIES: Category[] = [
   "gridlines",
   "roof",
 ];
-const LANDSCAPE_CATEGORIES: Category[] = ["trees", "garden", "grass"];
+const LANDSCAPE_CATEGORIES: Category[] = ["garden", "grass"];
 const ACCENT_CATEGORIES: Category[] = ["people"];
 
 function hexToRgb(hex: string): [number, number, number] {
@@ -104,6 +104,14 @@ function boostSaturation(rgb: [number, number, number], factor: number): [number
   return hslToRgb([h, Math.min(1, s * factor), l]);
 }
 
+// Trees are drawn with the thinnest linework in the source artwork, so the
+// landscape tone reads as too faint on them specifically — darken it a
+// further notch just for that category rather than for garden/grass too.
+function darken(rgb: [number, number, number], amount: number): [number, number, number] {
+  const [h, s, l] = rgbToHsl(rgb);
+  return hslToRgb([h, s, Math.max(0, l - amount)]);
+}
+
 export function assignCategoryColours(
   paletteHexes: string[],
   seed = 0,
@@ -140,6 +148,7 @@ export function assignCategoryColours(
   const result = {} as Record<Category, string>;
   STRUCTURE_CATEGORIES.forEach((cat) => { result[cat] = structureColour; });
   LANDSCAPE_CATEGORIES.forEach((cat) => { result[cat] = landscapeColour; });
+  result.trees = rgbToHex(darken(hexToRgb(landscapeColour), 0.16));
   ACCENT_CATEGORIES.forEach((cat) => { result[cat] = accentColour; });
   return result;
 }
