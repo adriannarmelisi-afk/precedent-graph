@@ -598,12 +598,21 @@ function AppShell() {
 
           {activeView === "connections" && (
             <section className="flex h-full flex-col">
-              <h2 className="mb-3 shrink-0 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
+              <h2 className="shrink-0 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
                 Connections
                 <span className="ml-2 font-normal normal-case text-ink-tertiary">
                   grouped by category, sorted by connection strength to your project
                 </span>
               </h2>
+              <p className="mb-3 mt-1 shrink-0 text-[12px] leading-relaxed text-ink-tertiary">
+                Out of all {precedents.length} precedents in your Library, this is the ranked view of
+                which ones are actually relevant to the project you're working on right now — ranked
+                by how many concept tags they share with it, strongest first within each category. It
+                answers "given everything I've logged, what should I be looking at for this design?"
+                — the strongest matches are candidates worth marking as influences; categories with
+                no strong matches are a gap in your research. Click a tag dot on any row to filter the
+                whole list down to precedents sharing it.
+              </p>
               <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-hairline bg-surface-1 p-4">
                 <ConnectionStrengthList
                   nodes={nodes}

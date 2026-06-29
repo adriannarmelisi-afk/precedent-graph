@@ -8,11 +8,18 @@ interface DrawingRecolourProps {
   chosenSwatches: PaletteEntry[];
 }
 
+// "Generate another version" cycles through render styles as well as colour
+// remixes, so reshuffling doesn't just shuffle the same look — a couple of
+// the styles add solid fills (glazed glass, shadowed recesses) rather than
+// staying pure outline the whole time.
+const STYLE_LABELS = ["Linework", "Glazed windows", "Shaded windows & chimney"] as const;
+
 export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProps) {
   const activePalette = chosenSwatches.length > 0 ? chosenSwatches : palette;
   const hexes = activePalette.map((s) => s.hex);
 
   const [seed, setSeed] = useState(0);
+  const styleIndex = seed % STYLE_LABELS.length;
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -55,7 +62,39 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
     svgEl.querySelectorAll<SVGElement>('[data-cat="trees"]').forEach((el) => {
       el.style.strokeWidth = "0.05px";
     });
-  }, [hexes.join(","), seed]);
+
+    // Reset any fills from a previous style before applying this one — only
+    // the closed shapes (rects/polygons) within a category take a fill
+    // sensibly; the rest of each category is open linework.
+    svgEl.querySelectorAll<SVGElement>("rect[data-cat], polygon[data-cat]").forEach((el) => {
+      el.style.fill = "none";
+    });
+    if (styleIndex === 1) {
+      // Glazed windows: tint the window panes with the accent colour, like
+      // glass catching the palette's brightest note.
+      svgEl.querySelectorAll<SVGElement>('rect[data-cat="windows"]').forEach((el) => {
+        el.style.fill = colours.people;
+        el.style.fillOpacity = "0.28";
+      });
+    } else if (styleIndex === 2) {
+      // Shaded windows & chimney: a darker fill on recessed/projecting
+      // elements, like cast shadow rather than flat outline.
+      svgEl.querySelectorAll<SVGElement>('rect[data-cat="windows"]').forEach((el) => {
+        el.style.fill = colours.wall;
+        el.style.fillOpacity = "0.4";
+      });
+      svgEl.querySelectorAll<SVGElement>('rect[data-cat="chimney"]').forEach((el) => {
+        el.style.fill = colours.chimney;
+        el.style.fillOpacity = "0.6";
+      });
+      svgEl
+        .querySelectorAll<SVGElement>('rect[data-cat="fence"], polygon[data-cat="fence"]')
+        .forEach((el) => {
+          el.style.fill = colours.fence;
+          el.style.fillOpacity = "0.25";
+        });
+    }
+  }, [hexes.join(","), seed, styleIndex]);
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-col gap-5">
@@ -74,14 +113,17 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
           </p>
         </div>
         {activePalette.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setSeed((s) => s + 1)}
-            className="shrink-0 rounded-md border border-hairline-strong px-2.5 py-1.5 text-[11px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary"
-            title="Reshuffles how your palette's colours are distributed across the drawing, without changing the palette itself"
-          >
-            ✦ Generate another version
-          </button>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <button
+              type="button"
+              onClick={() => setSeed((s) => s + 1)}
+              className="shrink-0 rounded-md border border-hairline-strong px-2.5 py-1.5 text-[11px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary"
+              title="Reshuffles how your palette's colours are distributed across the drawing, and cycles between outline-only and filled render styles"
+            >
+              ✦ Generate another version
+            </button>
+            <span className="text-[10px] text-ink-tertiary">Style: {STYLE_LABELS[styleIndex]}</span>
+          </div>
         )}
       </div>
 
