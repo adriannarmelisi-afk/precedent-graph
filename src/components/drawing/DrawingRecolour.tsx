@@ -12,7 +12,7 @@ interface DrawingRecolourProps {
 // remixes, so reshuffling doesn't just shuffle the same look — a couple of
 // the styles add solid fills (glazed glass, shadowed recesses) rather than
 // staying pure outline the whole time.
-const STYLE_LABELS = ["Linework", "Glazed windows", "Shaded windows & chimney"] as const;
+const STYLE_LABELS = ["Linework", "Glazed windows", "Shaded windows"] as const;
 
 export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProps) {
   const activePalette = chosenSwatches.length > 0 ? chosenSwatches : palette;
@@ -70,29 +70,19 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
       el.style.fill = "none";
     });
     if (styleIndex === 1) {
-      // Glazed windows: tint the window panes with the accent colour, like
+      // Glazed windows: a very light tint on the window panes only, like
       // glass catching the palette's brightest note.
       svgEl.querySelectorAll<SVGElement>('rect[data-cat="windows"]').forEach((el) => {
         el.style.fill = colours.people;
-        el.style.fillOpacity = "0.28";
+        el.style.fillOpacity = "0.12";
       });
     } else if (styleIndex === 2) {
-      // Shaded windows & chimney: a darker fill on recessed/projecting
-      // elements, like cast shadow rather than flat outline.
+      // Shaded windows: a very light fill on the window panes only, like
+      // glass in shadow rather than flat outline.
       svgEl.querySelectorAll<SVGElement>('rect[data-cat="windows"]').forEach((el) => {
         el.style.fill = colours.wall;
-        el.style.fillOpacity = "0.4";
+        el.style.fillOpacity = "0.15";
       });
-      svgEl.querySelectorAll<SVGElement>('rect[data-cat="chimney"]').forEach((el) => {
-        el.style.fill = colours.chimney;
-        el.style.fillOpacity = "0.6";
-      });
-      svgEl
-        .querySelectorAll<SVGElement>('rect[data-cat="fence"], polygon[data-cat="fence"]')
-        .forEach((el) => {
-          el.style.fill = colours.fence;
-          el.style.fillOpacity = "0.25";
-        });
     }
   }, [hexes.join(","), seed, styleIndex]);
 
