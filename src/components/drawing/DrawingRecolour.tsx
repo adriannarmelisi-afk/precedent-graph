@@ -104,12 +104,30 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
       el.style.strokeWidth = "0.05px";
     });
     // For fill styles, give people a white fill so window/gutter tints don't
-    // show through their transparent interior — the palette stroke stays on top.
-    // For Linework style, keep them transparent so they read as pure outlines.
+    // show through their transparent interior. A cloned linework group is
+    // appended at the very end of the SVG so the strokes always render on top,
+    // preserving the original pencil-drawing appearance of the figures.
+    // For Linework style they stay transparent — pure outlines, no fill needed.
     const peopleFill = styleIndex > 0 ? "white" : "none";
     svgEl.querySelectorAll<SVGElement>('[data-cat="people"]').forEach((el) => {
       el.style.fill = peopleFill;
     });
+
+    // Remove any previously cloned linework group, then re-clone people paths
+    // to the end of the SVG so their strokes paint above all fills.
+    svgEl.querySelector('[data-role="people-linework"]')?.remove();
+    if (styleIndex > 0) {
+      const lineworkGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+      lineworkGroup.setAttribute("data-role", "people-linework");
+      svgEl.querySelectorAll<SVGElement>('[data-cat="people"]').forEach((el) => {
+        const clone = el.cloneNode(true) as SVGElement;
+        clone.style.fill = "none";
+        clone.style.stroke = colours.people;
+        clone.removeAttribute("data-cat");
+        lineworkGroup.appendChild(clone);
+      });
+      svgEl.appendChild(lineworkGroup);
+    }
 
     // Glass-pane fill lives in its own overlay group, drawn fresh each time,
     // so it never touches the original artwork's fill (door, trim band,
