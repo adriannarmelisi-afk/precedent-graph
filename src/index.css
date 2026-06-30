@@ -12,24 +12,6 @@
   animation: gradient-pan 10s ease infinite;
 }
 
-/* Sparkle decoration used in hero sections */
-.sparkle::before,
-.sparkle::after {
-  content: "✦";
-  position: absolute;
-  color: #c0322e;
-  opacity: 0.18;
-  font-size: 1rem;
-  pointer-events: none;
-  animation: sparkle-float 6s ease-in-out infinite;
-}
-.sparkle::before { top: 18%; right: 22%; font-size: 1.4rem; animation-delay: 0s; }
-.sparkle::after  { top: 60%; right: 12%; font-size: 0.7rem; animation-delay: 2.5s; }
-
-@keyframes sparkle-float {
-  0%, 100% { transform: translateY(0) rotate(0deg);   opacity: 0.18; }
-  50%       { transform: translateY(-6px) rotate(20deg); opacity: 0.32; }
-}
 
 /*
  * Light editorial palette — greyscale "paper" surfaces with a single red accent.

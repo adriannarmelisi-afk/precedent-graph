@@ -137,9 +137,7 @@ function AppShell() {
   const [form, setForm] = useState<{ mode: "add" | "edit"; id?: string } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
-  const [exportingDrawing, setExportingDrawing] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
-  const drawingExportRef = useRef<HTMLDivElement>(null);
   const isProjectEmpty = !project.title && !project.summary && project.tags.length === 0;
   // First-time visitors land on Project (nothing to research without a concept yet);
   // once it's filled in, default to Library on future loads.
@@ -181,16 +179,6 @@ function AppShell() {
     }
   };
 
-  const handleExportDrawing = async () => {
-    if (!drawingExportRef.current) return;
-    setExportingDrawing(true);
-    try {
-      const slug = (project.title || "precedent-graph").replace(/\s+/g, "-").toLowerCase();
-      await downloadCanvas(drawingExportRef.current, `${slug}-sample-drawing.png`);
-    } finally {
-      setExportingDrawing(false);
-    }
-  };
 
   const handleAnalyse = async () => {
     setAnalysing(true);
