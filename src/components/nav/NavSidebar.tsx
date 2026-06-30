@@ -17,7 +17,7 @@ const ITEMS: { id: AppView; label: string }[] = [
 
 export function NavSidebar({ active, onChange, precedentCount, influenceCount }: ViewTabsProps) {
   return (
-    <nav className="flex shrink-0 items-center gap-1 border-b border-hairline bg-surface-1 px-6">
+    <nav className="flex shrink-0 items-center gap-1.5 border-b border-hairline bg-surface-1 px-6 py-2">
       {ITEMS.map((item) => {
         const isActive = active === item.id;
         const count =
@@ -27,16 +27,19 @@ export function NavSidebar({ active, onChange, precedentCount, influenceCount }:
             key={item.id}
             type="button"
             onClick={() => onChange(item.id)}
-            className={`relative flex items-center gap-1.5 px-3 py-3 text-[13px] font-medium transition-colors ${
-              isActive ? "text-ink" : "text-ink-tertiary hover:text-ink-subtle"
+            className={`flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-medium transition-colors ${
+              isActive
+                ? "bg-ink text-surface-1"
+                : "text-ink-tertiary hover:bg-surface-3 hover:text-ink-subtle"
             }`}
           >
             {item.label}
             {count !== null && count > 0 && (
-              <span className="text-[11px] text-ink-tertiary">{count}</span>
-            )}
-            {isActive && (
-              <span className="absolute inset-x-3 bottom-0 h-[2px] rounded-full bg-primary" />
+              <span
+                className={`text-[10px] ${isActive ? "text-surface-3" : "text-ink-tertiary"}`}
+              >
+                {count}
+              </span>
             )}
           </button>
         );

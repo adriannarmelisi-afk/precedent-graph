@@ -25,16 +25,16 @@ export function PrecedentCard({
     <button
       type="button"
       onClick={() => onSelect(id)}
-      className={`group flex flex-col overflow-hidden rounded-lg border bg-surface-1 text-left transition-colors ${
+      className={`group flex flex-col overflow-hidden rounded-2xl border bg-surface-1 text-left shadow-sm transition-all ${
         selected
-          ? "border-primary ring-1 ring-primary"
+          ? "border-primary ring-1 ring-primary shadow-md"
           : isInfluence
-            ? "border-primary"
-            : "border-hairline hover:border-hairline-strong"
+            ? "border-primary shadow-md"
+            : "border-hairline hover:border-hairline-strong hover:shadow-md"
       }`}
       style={isInfluence && !selected ? { borderWidth: 2 } : undefined}
     >
-      <div className="relative flex h-28 items-center justify-center bg-surface-3">
+      <div className="relative flex h-36 items-center justify-center bg-surface-3">
         {imageUrl ? (
           <img src={imageUrl} alt={name} className="h-full w-full object-cover" />
         ) : (
@@ -112,7 +112,7 @@ export function PrecedentCard({
               e.stopPropagation();
               onToggleInfluence(id, !isInfluence);
             }}
-            className={`cursor-pointer rounded px-2 py-0.5 text-[10px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary ${
+            className={`cursor-pointer rounded-full px-2.5 py-0.5 text-[10px] font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-primary ${
               isInfluence
                 ? "bg-primary text-on-primary"
                 : "border border-hairline-strong text-ink-subtle hover:border-primary hover:text-primary"

@@ -8,11 +8,7 @@ interface DrawingRecolourProps {
   chosenSwatches: PaletteEntry[];
 }
 
-// "Generate another version" cycles through render styles as well as colour
-// remixes, so reshuffling doesn't just shuffle the same look — a couple of
-// the styles add solid fills (glazed glass, shadowed recesses) rather than
-// staying pure outline the whole time.
-const STYLE_LABELS = ["Linework", "Glazed windows", "Shaded windows"] as const;
+const STYLE_LABELS = ["Linework", "Glazed windows", "Shaded windows", "Windows + gutter"] as const;
 
 // The source artwork's "windows" data-cat also covers the door, its
 // hardware, and the long datum trim band across the facade — filling the
@@ -24,7 +20,16 @@ const GLASS_PANES = [
   { x: 461.81, y: 581.09, width: 17.32, height: 34.98 },
   { x: 576.91, y: 581.15, width: 56.08, height: 34.24 },
   { x: 682.99, y: 581.09, width: 18.83, height: 34.39 },
-  { x: 714.4, y: 581.09, width: 18.83, height: 34.39 },
+  { x: 714.4,  y: 581.09, width: 18.83, height: 34.39 },
+];
+
+// The datum/gutter band runs across the full facade in three sections.
+// Left and middle are <rect> elements; right section is <polyline> elements,
+// so a rect query alone misses it. All three are hardcoded here instead.
+const GUTTER_BANDS = [
+  { x: 405.12, y: 559.97, width: 123.65, height: 9.95 }, // left section
+  { x: 529.60, y: 559.97, width: 123.65, height: 9.95 }, // middle section
+  { x: 654.12, y: 559.97, width:  66.14, height: 9.95 }, // right section (polylines)
 ];
 
 export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProps) {
@@ -75,6 +80,13 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
     svgEl.querySelectorAll<SVGElement>('[data-cat="trees"]').forEach((el) => {
       el.style.strokeWidth = "0.05px";
     });
+    // For fill styles, give people a white fill so window/gutter tints don't
+    // show through their transparent interior — the palette stroke stays on top.
+    // For Linework style, keep them transparent so they read as pure outlines.
+    const peopleFill = styleIndex > 0 ? "white" : "none";
+    svgEl.querySelectorAll<SVGElement>('[data-cat="people"]').forEach((el) => {
+      el.style.fill = peopleFill;
+    });
 
     // Glass-pane fill lives in its own overlay group, drawn fresh each time,
     // so it never touches the original artwork's fill (door, trim band,
@@ -83,13 +95,12 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
     if (!overlay) {
       overlay = document.createElementNS("http://www.w3.org/2000/svg", "g");
       overlay.setAttribute("data-role", "glass-overlay");
-      svgEl.appendChild(overlay);
+      // Insert as first child so all original linework (people, trees, etc.)
+      // paints on top of the fills.
+      svgEl.insertBefore(overlay, svgEl.firstChild);
     }
     overlay.innerHTML = "";
-    if (styleIndex === 1 || styleIndex === 2) {
-      // Glazed windows uses the accent tone; Shaded windows uses the
-      // structure tone — both kept very light so it reads as a tint, not a
-      // block of colour.
+    if (styleIndex === 1 || styleIndex === 2 || styleIndex === 3) {
       const fill = styleIndex === 1 ? colours.people : colours.wall;
       const fillOpacity = styleIndex === 1 ? "0.12" : "0.15";
       GLASS_PANES.forEach((pane) => {
@@ -100,6 +111,20 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
         rect.setAttribute("height", String(pane.height));
         rect.setAttribute("fill", fill);
         rect.setAttribute("fill-opacity", fillOpacity);
+        overlay!.appendChild(rect);
+      });
+    }
+
+    if (styleIndex === 3) {
+      const gutterFill = colours.roof;
+      GUTTER_BANDS.forEach((band) => {
+        const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+        rect.setAttribute("x", String(band.x));
+        rect.setAttribute("y", String(band.y));
+        rect.setAttribute("width", String(band.width));
+        rect.setAttribute("height", String(band.height));
+        rect.setAttribute("fill", gutterFill);
+        rect.setAttribute("fill-opacity", "0.18");
         overlay!.appendChild(rect);
       });
     }

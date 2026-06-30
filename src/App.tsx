@@ -220,12 +220,13 @@ function AppShell() {
 
   return (
     <div className="flex h-screen w-screen flex-col bg-canvas text-ink">
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-hairline bg-surface-1 px-6">
-        <div className="flex items-baseline gap-3">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-hairline px-6" style={{ background: "linear-gradient(to right, #ffffff 0%, #fff5f5 60%, #e8a0a0 100%)" }}>
+        <div className="flex items-center gap-3">
           <span className="font-display text-[15px] font-bold uppercase tracking-tight text-ink">
             Concept Constellation
           </span>
-          <span className="text-xs text-ink-tertiary">
+          <span className="flex items-center gap-1.5 rounded-full border border-hairline-strong px-2.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-tertiary">
+            <span className="h-1.5 w-1.5 rounded-full bg-primary" />
             {precedents.length} precedents · {influenceCount} influences
           </span>
         </div>
@@ -294,7 +295,7 @@ function AppShell() {
                 <button
                   type="button"
                   onClick={() => setForm({ mode: "add" })}
-                  className="shrink-0 rounded-md border border-hairline-strong px-2.5 py-1 text-[11px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary"
+                  className="shrink-0 rounded-full border border-hairline-strong px-3 py-1 text-[11px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary"
                 >
                   + Add precedent
                 </button>
@@ -310,14 +311,14 @@ function AppShell() {
                     <button
                       type="button"
                       onClick={() => setActiveView("drawing")}
-                      className="rounded-md border border-hairline-strong px-2.5 py-1 text-[11px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary"
+                      className="rounded-full border border-hairline-strong px-3 py-1 text-[11px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary"
                     >
                       See it on the sample drawing →
                     </button>
                     <button
                       type="button"
                       onClick={() => setActiveView("export")}
-                      className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-on-primary transition-colors hover:bg-primary-hover"
+                      className="rounded-full bg-primary px-3 py-1 text-[11px] font-medium text-on-primary transition-colors hover:bg-primary-hover"
                     >
                       Export your style kit →
                     </button>
@@ -511,7 +512,7 @@ function AppShell() {
                     <button
                       type="button"
                       onClick={handleNewProject}
-                      className="rounded-md bg-primary px-2.5 py-1 text-[11px] font-medium text-on-primary transition-colors hover:bg-primary-hover"
+                      className="rounded-full bg-primary px-3 py-1 text-[11px] font-medium text-on-primary transition-colors hover:bg-primary-hover"
                     >
                       + New project
                     </button>
@@ -645,7 +646,7 @@ function AppShell() {
                   type="button"
                   onClick={handleExport}
                   disabled={exporting}
-                  className="rounded-md bg-primary px-3 py-1.5 text-xs font-medium text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+                  className="rounded-full bg-primary px-4 py-1.5 text-xs font-medium text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
                 >
                   {exporting ? "Exporting…" : "Download PNG"}
                 </button>

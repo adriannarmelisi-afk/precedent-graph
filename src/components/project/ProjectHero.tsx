@@ -15,12 +15,7 @@ export function ProjectHero({ projectTitle, precedentCount, influenceCount, onOp
     <div
       className="relative overflow-hidden rounded-lg border border-hairline px-6 pb-8 pt-5"
       style={{
-        backgroundColor: "#f7f4ef",
-        backgroundImage: [
-          "radial-gradient(circle at 78% 18%, rgba(192,50,46,0.22), transparent 52%)",
-          "radial-gradient(circle at 12% 88%, rgba(192,50,46,0.14), transparent 55%)",
-          "radial-gradient(circle at 92% 92%, rgba(193,140,80,0.20), transparent 50%)",
-        ].join(", "),
+        background: "linear-gradient(to right, #ffffff 0%, #fff5f5 60%, #e8a0a0 100%)",
       }}
     >
       <div className="relative flex items-start justify-between gap-6">
