@@ -5,19 +5,10 @@ interface ProjectHeroProps {
   onOpenLibrary: () => void;
 }
 
-// A large branded banner for the Project tab — same spirit as the gradient
-// "hero" headers other students have been adding, but built from the app's
-// own cream/red palette instead of a generic dark gradient, so it reads as
-// this tool's identity rather than a borrowed template. Shows the app's own
-// name, not the project's — the project itself stays a quiet subtitle here.
 export function ProjectHero({ projectTitle, precedentCount, influenceCount, onOpenLibrary }: ProjectHeroProps) {
   return (
-    <div
-      className="relative overflow-hidden rounded-lg border border-hairline px-6 pb-8 pt-5"
-      style={{
-        background: "linear-gradient(to right, #ffffff 0%, #fff5f5 60%, #e8a0a0 100%)",
-      }}
-    >
+    <div className="gradient-header relative overflow-hidden rounded-2xl border border-hairline px-6 pb-10 pt-5">
+
       <div className="relative flex items-start justify-between gap-6">
         <div className="flex shrink-0 items-center gap-2 whitespace-nowrap text-[11px] font-medium uppercase tracking-wide text-ink-subtle">
           <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" aria-hidden="true" />
@@ -38,11 +29,21 @@ export function ProjectHero({ projectTitle, precedentCount, influenceCount, onOp
         </div>
       </div>
 
-      <h1 className="relative mt-10 text-[28px] font-bold uppercase leading-none tracking-tight text-ink sm:text-[44px] md:text-[56px]">
-        Concept Constellation
+      <h1
+        className="relative mt-8 leading-[0.92] text-ink"
+        style={{
+          fontSize: "clamp(2.4rem, 7vw, 4.5rem)",
+          fontWeight: 700,
+          letterSpacing: "0.04em",
+          textTransform: "uppercase",
+        }}
+      >
+        concept<br />constellation
       </h1>
-      <p className="relative mt-2 truncate text-[12px] text-ink-subtle">
-        {projectTitle ? `Currently mapping — ${projectTitle}` : "No project open yet — fill in your concept below."}
+      <p className="relative mt-3 text-[12px] text-ink-subtle">
+        {projectTitle
+          ? `Currently mapping — ${projectTitle}`
+          : "No project open yet — fill in your concept below."}
       </p>
     </div>
   );

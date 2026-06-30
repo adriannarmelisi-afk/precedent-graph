@@ -34,6 +34,7 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
 
   const [lookup, setLookup] = useState<Status>({ kind: "idle" });
   const [extract, setExtract] = useState<Status>({ kind: "idle" });
+  const [colourCount, setColourCount] = useState(7);
 
   const [suggestedTags, setSuggestedTags] = useState<string[] | null>(null);
 
@@ -41,7 +42,7 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
     if (!url) return;
     setExtract({ kind: "loading" });
     try {
-      const hexes = await extractPalette(url, 7);
+      const hexes = await extractPalette(url, colourCount);
       setSwatches(hexes.map((hex) => ({ hex, label: "", sourceId: id })));
       setExtract({ kind: hexes.length ? "ok" : "error", message: hexes.length ? undefined : "No colours found" });
     } catch {
@@ -55,7 +56,7 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
   const runExtractionFromFile = async (file: File) => {
     setExtract({ kind: "loading" });
     try {
-      const hexes = await extractPaletteFromFile(file, 7);
+      const hexes = await extractPaletteFromFile(file, colourCount);
       setSwatches(hexes.map((hex) => ({ hex, label: "", sourceId: id })));
       setExtract({ kind: hexes.length ? "ok" : "error", message: hexes.length ? undefined : "No colours found" });
     } catch {
@@ -233,6 +234,23 @@ export function PrecedentForm({ mode, precedent, onClose }: PrecedentFormProps) 
               >
                 {extract.kind === "loading" ? "Extracting…" : "Extract colours"}
               </button>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-medium uppercase tracking-wide text-ink-tertiary">Colours to extract</span>
+              {[3, 5, 7, 10].map((n) => (
+                <button
+                  key={n}
+                  type="button"
+                  onClick={() => setColourCount(n)}
+                  className={`rounded-full px-2.5 py-0.5 text-[11px] font-medium transition-colors ${
+                    colourCount === n
+                      ? "bg-primary text-on-primary"
+                      : "border border-hairline-strong text-ink-subtle hover:border-primary hover:text-primary"
+                  }`}
+                >
+                  {n}
+                </button>
+              ))}
             </div>
             {extract.message && (
               <div className="mt-1 flex items-center justify-between gap-2">

@@ -137,7 +137,9 @@ function AppShell() {
   const [form, setForm] = useState<{ mode: "add" | "edit"; id?: string } | null>(null);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [exportingDrawing, setExportingDrawing] = useState(false);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const drawingExportRef = useRef<HTMLDivElement>(null);
   const isProjectEmpty = !project.title && !project.summary && project.tags.length === 0;
   // First-time visitors land on Project (nothing to research without a concept yet);
   // once it's filled in, default to Library on future loads.
@@ -153,30 +155,40 @@ function AppShell() {
     if (id === "project") setActiveView("project");
   };
 
+  const downloadCanvas = async (el: HTMLElement, fileName: string) => {
+    const { default: html2canvas } = await import("html2canvas");
+    const canvas = await html2canvas(el, { backgroundColor: "#f4f3f0", scale: 2 });
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+    if (!blob) return;
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+
   const handleExport = async () => {
     if (!sheetRef.current) return;
     setExporting(true);
     try {
-      const { default: html2canvas } = await import("html2canvas");
-      const canvas = await html2canvas(sheetRef.current, { backgroundColor: "#f4f3f0", scale: 2 });
-      const fileName = `${(project.title || "precedent-graph").replace(/\s+/g, "-").toLowerCase()}-style-kit.png`;
-
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, "image/png"),
-      );
-      if (!blob) return;
-
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = fileName;
-      // Anchor must be in the DOM for the click to trigger a download in all browsers.
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      const slug = (project.title || "precedent-graph").replace(/\s+/g, "-").toLowerCase();
+      await downloadCanvas(sheetRef.current, `${slug}-style-kit.png`);
     } finally {
       setExporting(false);
+    }
+  };
+
+  const handleExportDrawing = async () => {
+    if (!drawingExportRef.current) return;
+    setExportingDrawing(true);
+    try {
+      const slug = (project.title || "precedent-graph").replace(/\s+/g, "-").toLowerCase();
+      await downloadCanvas(drawingExportRef.current, `${slug}-sample-drawing.png`);
+    } finally {
+      setExportingDrawing(false);
     }
   };
 
@@ -220,7 +232,7 @@ function AppShell() {
 
   return (
     <div className="flex h-screen w-screen flex-col bg-canvas text-ink">
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-hairline px-6" style={{ background: "linear-gradient(to right, #ffffff 0%, #fff5f5 60%, #e8a0a0 100%)" }}>
+      <header className="gradient-header flex h-14 shrink-0 items-center justify-between border-b border-hairline px-6">
         <div className="flex items-center gap-3">
           <span className="font-display text-[15px] font-bold uppercase tracking-tight text-ink">
             Concept Constellation
@@ -599,31 +611,56 @@ function AppShell() {
 
           {activeView === "connections" && (
             <section className="flex h-full flex-col">
-              <h2 className="shrink-0 text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
-                Connections
-                <span className="ml-2 font-normal normal-case text-ink-tertiary">
-                  grouped by category, sorted by connection strength to your project
-                </span>
-              </h2>
-              <p className="mb-3 mt-1 shrink-0 text-[12px] leading-relaxed text-ink-tertiary">
-                Out of all {precedents.length} precedents in your Library, this is the ranked view of
-                which ones are actually relevant to the project you're working on right now — ranked
-                by how many concept tags they share with it, strongest first within each category. It
-                answers "given everything I've logged, what should I be looking at for this design?"
-                — the strongest matches are candidates worth marking as influences; categories with
-                no strong matches are a gap in your research. Click a tag dot on any row to filter the
-                whole list down to precedents sharing it.
-              </p>
-              <div className="min-h-0 flex-1 overflow-hidden rounded-lg border border-hairline bg-surface-1 p-4">
-                <ConnectionStrengthList
-                  nodes={nodes}
-                  edges={edges}
-                  precedents={precedents}
-                  activeTagFilters={ui.activeTagFilters}
-                  onSelect={handleNodeClick}
-                  onTagClick={(tag) => dispatch(toggleTagFilter(tag))}
-                />
+              <div className="mb-4 flex items-start justify-between gap-4">
+                <div>
+                  <h2 className="text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
+                    Connections
+                    <span className="ml-2 font-normal normal-case text-ink-tertiary">
+                      ranked by overlap with your project concept
+                    </span>
+                  </h2>
+                  <p className="mt-1 max-w-xl text-[12px] leading-relaxed text-ink-tertiary">
+                    Which precedents are most relevant to what you're designing right now? This view ranks
+                    your entire library by how many concept tags each one shares with your active project —
+                    strongest matches first. Use it to decide what to mark as an influence, and to spot
+                    gaps where no precedents cover a concept you care about.
+                  </p>
+                </div>
+                {influenceCount === 0 && project.tags.length === 0 && (
+                  <div className="shrink-0 rounded-xl border border-hairline bg-surface-2 px-4 py-3 text-right">
+                    <p className="text-[11px] font-medium text-ink-subtle">To get started</p>
+                    <p className="mt-0.5 text-[11px] text-ink-tertiary">Add concept tags on the Project tab, then come back here to see ranked matches.</p>
+                  </div>
+                )}
               </div>
+
+              {project.tags.length === 0 ? (
+                <div className="flex flex-1 flex-col items-center justify-center gap-3 rounded-2xl border border-dashed border-hairline-strong bg-surface-2 p-10 text-center">
+                  <span className="text-3xl opacity-30">✦</span>
+                  <p className="text-[13px] font-medium text-ink-subtle">No concept tags yet</p>
+                  <p className="max-w-xs text-[12px] leading-relaxed text-ink-tertiary">
+                    Add concept tags to your project first — Connections ranks your library against them to show you what's relevant.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => setActiveView("project")}
+                    className="mt-1 rounded-full bg-primary px-4 py-1.5 text-[11px] font-medium text-on-primary transition-colors hover:bg-primary-hover"
+                  >
+                    Go to Project →
+                  </button>
+                </div>
+              ) : (
+                <div className="min-h-0 flex-1 overflow-hidden rounded-xl border border-hairline bg-surface-1 p-4">
+                  <ConnectionStrengthList
+                    nodes={nodes}
+                    edges={edges}
+                    precedents={precedents}
+                    activeTagFilters={ui.activeTagFilters}
+                    onSelect={handleNodeClick}
+                    onTagClick={(tag) => dispatch(toggleTagFilter(tag))}
+                  />
+                </div>
+              )}
             </section>
           )}
 
@@ -632,34 +669,37 @@ function AppShell() {
           )}
 
           {activeView === "export" && (
-            <div>
-              <div className="mb-4 flex items-center justify-between">
-                <h2 className="text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
-                  Export style kit
-                  <span className="ml-2 font-normal normal-case text-ink-tertiary">
-                    {chosenSwatches.length > 0
-                      ? `uses your ${chosenSwatches.length}-colour drawing palette`
-                      : "uses the full combined palette — star colours on Project to curate"}
-                  </span>
-                </h2>
-                <button
-                  type="button"
-                  onClick={handleExport}
-                  disabled={exporting}
-                  className="rounded-full bg-primary px-4 py-1.5 text-xs font-medium text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
-                >
-                  {exporting ? "Exporting…" : "Download PNG"}
-                </button>
+            <div className="flex flex-col gap-8">
+              <div>
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-[11px] font-medium uppercase tracking-wide text-ink-tertiary">
+                    Style kit
+                    <span className="ml-2 font-normal normal-case text-ink-tertiary">
+                      {chosenSwatches.length > 0
+                        ? `uses your ${chosenSwatches.length}-colour drawing palette`
+                        : "uses the full combined palette — star colours on Project to curate"}
+                    </span>
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={handleExport}
+                    disabled={exporting}
+                    className="rounded-full bg-primary px-4 py-1.5 text-xs font-medium text-on-primary transition-colors hover:bg-primary-hover disabled:opacity-60"
+                  >
+                    {exporting ? "Exporting…" : "↓ Download style kit"}
+                  </button>
+                </div>
+                <div className="flex justify-center overflow-auto rounded-lg border border-hairline bg-surface-3 p-6">
+                  <StyleKitExport
+                    ref={sheetRef}
+                    project={project}
+                    palette={chosenSwatches.length > 0 ? chosenSwatches : palette}
+                    materials={materials}
+                    influences={influences}
+                  />
+                </div>
               </div>
-              <div className="flex justify-center overflow-auto rounded-lg border border-hairline bg-surface-3 p-6">
-                <StyleKitExport
-                  ref={sheetRef}
-                  project={project}
-                  palette={chosenSwatches.length > 0 ? chosenSwatches : palette}
-                  materials={materials}
-                  influences={influences}
-                />
-              </div>
+
             </div>
           )}
         </main>

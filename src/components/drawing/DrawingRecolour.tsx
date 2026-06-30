@@ -39,6 +39,29 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
   const [seed, setSeed] = useState(0);
   const styleIndex = seed % STYLE_LABELS.length;
   const containerRef = useRef<HTMLDivElement>(null);
+  const cardRef = useRef<HTMLDivElement>(null);
+  const [downloading, setDownloading] = useState(false);
+
+  const handleDownload = async () => {
+    if (!cardRef.current) return;
+    setDownloading(true);
+    try {
+      const { default: html2canvas } = await import("html2canvas");
+      const canvas = await html2canvas(cardRef.current, { backgroundColor: "#ffffff", scale: 2 });
+      const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
+      if (!blob) return;
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `sample-drawing-${STYLE_LABELS[styleIndex].toLowerCase().replace(/\s+/g, "-")}.png`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } finally {
+      setDownloading(false);
+    }
+  };
 
   useEffect(() => {
     const svgEl = containerRef.current?.querySelector("svg");
@@ -148,14 +171,24 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
         </div>
         {activePalette.length > 0 && (
           <div className="flex shrink-0 flex-col items-end gap-1">
-            <button
-              type="button"
-              onClick={() => setSeed((s) => s + 1)}
-              className="shrink-0 rounded-md border border-hairline-strong px-2.5 py-1.5 text-[11px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary"
-              title="Reshuffles how your palette's colours are distributed across the drawing, and cycles between outline-only and filled render styles"
-            >
-              ✦ Generate another version
-            </button>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => setSeed((s) => s + 1)}
+                className="shrink-0 rounded-md border border-hairline-strong px-2.5 py-1.5 text-[11px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary"
+                title="Reshuffles how your palette's colours are distributed across the drawing, and cycles between outline-only and filled render styles"
+              >
+                ✦ Generate another version
+              </button>
+              <button
+                type="button"
+                onClick={handleDownload}
+                disabled={downloading}
+                className="shrink-0 rounded-md border border-hairline-strong px-2.5 py-1.5 text-[11px] font-medium text-ink-subtle transition-colors hover:border-primary hover:text-primary disabled:opacity-40"
+              >
+                {downloading ? "Saving…" : "↓ Download"}
+              </button>
+            </div>
             <span className="text-[10px] text-ink-tertiary">Style: {STYLE_LABELS[styleIndex]}</span>
           </div>
         )}
@@ -166,7 +199,7 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
           No palette yet — mark some precedents as influences in the Library first to build one.
         </p>
       ) : (
-        <div className="rounded-lg border border-hairline bg-surface-1 p-5">
+        <div ref={cardRef} className="rounded-lg border border-hairline bg-surface-1 p-5">
           <div className="mb-4 flex flex-wrap gap-1.5">
             {activePalette.map((s, i) => (
               <span
