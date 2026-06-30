@@ -1,7 +1,7 @@
 # Product Brief: Precedent Graph — Architecture Studio Research Tool
 
 **Status:** Synced to implementation
-**Date:** 2026-06-22
+**Date:** 2026-06-30
 **Assignment:** 11323 AT2 — Part 2 (Mini Application)
 **Stack:** Vite + React + TypeScript · Tailwind CSS · D3.js · LocalStorage · html2canvas
 
@@ -25,20 +25,21 @@ Conceptassistant Skill (Part 1)
       ↓
 Precedent Graph App (Part 2)
   → log precedents → tag against a concept → extract palette + materials
-  → confirm real influences → export a style kit
+  → confirm real influences → see palette on sample drawing → export a style kit
 ```
 
 ---
 
 ## 3. Product Overview
 
-A single-page web app, organised into four views reached via horizontal tabs (**Library / Project / Connections / Export**), where a student:
+A single-page web app, organised into five views reached via horizontal tabs (**Library / Project / Connections / Sample Drawing / Export**), where a student:
 
-1. Maintains a precedent library — 47 real entries sourced from Divisare, each with a real colour palette and (where visually evidenced) material swatches extracted directly from its image
+1. Maintains a precedent library — 70 real entries sourced from Divisare, each with a real colour palette and (where visually evidenced) material swatches extracted directly from its image
 2. Defines their own project as a permanent singleton — title, concept summary, concept tags — and gets deterministic tag suggestions from their own summary text
 3. Marks precedents as **influences**, which builds a combined colour palette and material set, and always draws a connection to the project in the constellation graph regardless of shared tags
 4. Optionally runs **Analyse** to rank logged precedents against their concept tags and surface concept gaps — offline and free by default, with an optional Claude comparison if the student supplies their own API key
-5. Exports a one-page PNG style kit — palette, materials, concept tags, graphic key, and a source-precedent citation list — previewed live before download
+5. Previews their palette applied live to a real architectural streetscape drawing, cycling between four render styles, and downloads any version as a PNG
+6. Exports a one-page PNG style kit — palette, materials, concept tags, graphic key, and a source-precedent citation list — previewed live before download
 
 Data lives entirely in the browser (`localStorage`). No login, no database, no required network calls.
 
@@ -56,7 +57,7 @@ interface Precedent {
   year: number;
   demonstrates: string;        // factual note (often location/typology); never a fabricated design claim
   tags: string[];               // slugified controlled-vocabulary tags
-  swatches: Swatch[];           // up to 7, k-means extracted from the real image
+  swatches: Swatch[];           // up to 10, k-means extracted from the real image
   isInfluence: boolean;
   imageUrl: string;
   materialTextures?: Record<string, string>; // optional real uploaded texture per material tag
@@ -104,7 +105,7 @@ interface AppState {
 }
 ```
 
-Persisted to `localStorage` under `"precedent-graph-v1"`. The write is wrapped in a try/catch — if the quota is exceeded (e.g. several uploaded material textures), the app keeps running in-memory rather than crashing.
+Persisted to `localStorage` under `"precedent-graph-v1"`. The write is wrapped in a try/catch — if the quota is exceeded (e.g. several uploaded material textures), the app keeps running in-memory rather than crashing. On first load, any seed precedents not yet in the stored library are merged in automatically, so returning visitors always see the full library after updates.
 
 ---
 
@@ -114,16 +115,16 @@ Persisted to `localStorage` under `"precedent-graph-v1"`. The write is wrapped i
 
 Typing a building name and clicking "Look up" fetches `https://en.wikipedia.org/api/rest_v1/page/summary/{title}` (free, keyless) and auto-fills architect/year/description/thumbnail. For buildings not on Wikipedia, a student pastes any image URL instead.
 
-### 5.2 Colour Extraction — with two real-world fallbacks
+### 5.2 Colour Extraction — with selectable count and two real-world fallbacks
 
 ```
 Image URL → try direct canvas read
   → blocked by CORS (common on Dezeen/Divisare)? retry via images.weserv.nl (free, keyless proxy)
     → still fails? student uploads the file directly (FileReader, never cross-origin, always works)
-  → k-means cluster (k=7) → 7 hex swatches, unlabelled until the student names them
+  → k-means cluster (k = student's choice: 3 / 5 / 7 / 10) → hex swatches, unlabelled until named
 ```
 
-Pure client-side. The proxy fallback was verified against a real Divisare image during development; the same image that fails direct canvas access succeeds through the proxy.
+The colour count is selectable via pill buttons (3 / 5 / 7 / 10) directly on the Add Precedent form, defaulting to 7. Pure client-side. The proxy fallback was verified against a real Divisare image during development; the same image that fails direct canvas access succeeds through the proxy.
 
 ### 5.3 Suggest Tags From Concept (deterministic, not AI)
 
@@ -133,8 +134,6 @@ Scans the project's free-text concept summary against a synonym/trigger map (`TA
 
 1. **Automatic** — every Material-vocabulary tag (concrete, timber, steel, brick, glass, stone, rammed-earth, ceramic, copper, textile) a precedent carries renders as a procedurally generated SVG texture pattern (`MaterialSwatch.tsx`) — pure vector, no images, no network, renders identically in the app and in the html2canvas export.
 2. **Manual override** — a student can upload a real texture (e.g. a download from architextures.org, which has no API and must be sourced by hand) per material tag on a precedent; the upload replaces the generated pattern wherever that swatch appears.
-
-24 of the 47 seed precedents carry real, visually-verified material tags (added by inspecting each photo directly); the rest are illustrations, diagrams, or physical-model photos where no material was visually legible, and were deliberately left untagged rather than guessed.
 
 ### 5.5 Analyse — offline-first, Claude optional
 
@@ -147,6 +146,21 @@ try { return await claudeAnalyse(...) } catch { return localAnalyse(...) } // an
 ```
 
 `localAnalyse` ranks precedents by shared-tag count with the project and lists project tags no logged precedent covers ("gaps"). The optional Claude path (`claude-haiku-4-5-20251001`, called directly from the browser with `anthropic-dangerous-direct-browser-access`) returns the same shape with richer natural-language reasoning. The result panel always shows which source ("claude" or "offline") produced the recommendation — this is also explained to the student directly in the Settings panel, since it's a real position on AI's role, not just an implementation detail.
+
+### 5.6 Sample Drawing — live palette on real linework
+
+A hand-categorised architectural streetscape SVG (people, trees, roof, wall, fence, windows, ground) is recoloured live from the student's influence palette. Four render styles cycle on "Generate another version":
+
+| Style | What fills |
+|---|---|
+| Linework | No fills — pure palette-coloured strokes only |
+| Glazed windows | Glass panes tinted with a palette colour at low opacity |
+| Shaded windows | Glass panes tinted, darker palette mapping |
+| Windows + gutter | Glass panes + datum gutter band both filled |
+
+Each category of element is assigned one palette colour deterministically (with a random shuffle on each "generate"). People figures receive a white fill in fill styles so window/gutter tints don't show through their transparent interiors; a cloned stroke-only group is appended at the top of the SVG render order so the original linework detail is always preserved on top.
+
+The student can download any version as a PNG (via html2canvas, scale 2×) directly from the Sample Drawing tab, without going to the Export view.
 
 ---
 
@@ -161,13 +175,14 @@ try { return await claudeAnalyse(...) } catch { return localAnalyse(...) } // an
 //    relationship, and the graph should never hide that.
 ```
 
-Edge stroke opacity scales with weight (`0.15 + weight × 0.18`, capped at 0.75) so single-tag ties fade back and strong multi-tag ties read clearly even with 47+ nodes on screen.
+Edge stroke opacity scales with weight (`0.15 + weight × 0.18`, capped at 0.75) so single-tag ties fade back and strong multi-tag ties read clearly even with 70+ nodes on screen.
 
 ### 6.2 Node Behaviour
 
 - The project node is a red diamond, **permanently pinned** to the centre of the canvas (or wherever the student last dragged it) — it never drifts under the force simulation's repulsion, unlike precedent nodes.
-- Labels are hidden by default and reveal on hover, except for the project node and any influence/recommended precedent, which stay labelled — this was a deliberate fix once the library grew to 47 nodes and permanent labels became unreadable clutter.
+- Labels are hidden by default and reveal on hover, except for the project node and any influence/recommended precedent, which stay labelled — this was a deliberate fix once the library grew to 70 nodes and permanent labels became unreadable clutter.
 - Clicking the project node switches the active view to **Project** (not just a same-page scroll-to, since Project now has its own screen).
+- When no project tags have been set, the Connections view shows an empty state with a direct "Go to Project →" link rather than an empty graph, guiding the student to define their concept first.
 
 ### 6.3 D3 Force Layout
 
@@ -216,10 +231,10 @@ Opens from the header gear icon. Three sections, each tied to something real rat
 
 ## 10. Navigation & Layout
 
-- **Header**: title, live counts, a collapse toggle (☰) for the right inspector panel, settings gear.
-- **View tabs** (horizontal, underline-active style): Library / Project / Connections / Export — replaced an earlier single long scrolling page once the precedent count grew to 47 and a left-sidebar nav variant, both of which were tried and rejected as visually worse than a clean horizontal tab strip.
+- **Header**: title, live counts, a collapse toggle (☰) for the right inspector panel, settings gear. Header uses an animated gradient that shifts subtly between warm off-whites and a red tint, matching the app's editorial palette.
+- **View tabs** (horizontal, underline-active style): Library / Project / Connections / Sample Drawing / Export — replaced an earlier single long scrolling page once the precedent count grew and a left-sidebar nav variant, both of which were tried and rejected as visually worse than a clean horizontal tab strip.
 - **Right inspector panel** (Library & Connections views only): tag filter chips, selected-precedent detail (swatches, materials, tags, edit/delete), live palette. Collapsible via the header toggle so the Library grid can use the full width when filters aren't needed.
-- **Project** and **Export** views intentionally have no right panel — it isn't relevant there.
+- **Project**, **Sample Drawing**, and **Export** views intentionally have no right panel — it isn't relevant there.
 
 ---
 
@@ -241,10 +256,13 @@ Pasting a Dezeen/Divisare image URL frequently fails direct canvas reads due to 
 architextures.org has no API and is licensed for manual, one-at-a-time downloads — not automated scraping. Building a deterministic, offline SVG pattern per material tag gets full automatic coverage for free; a manual upload path covers the cases where a student wants a specific real texture.
 
 ### ADR-06: Visual material tagging, not guessed tagging
-Material tags were added by downloading and visually inspecting all 47 precedent images, not by inferring from project titles. Roughly half the library (illustrations, diagrams, physical-model photos) was left deliberately untagged where no material was actually visible in the image, rather than fabricating a plausible-sounding guess.
+Material tags were added by downloading and visually inspecting all precedent images, not by inferring from project titles. Images that were illustrations, diagrams, or physical-model photos where no material was visually legible were deliberately left untagged rather than guessed.
 
 ### ADR-07: Styling — Tailwind + CSS custom properties (light/red theme)
 The original dark Linear-style theme was replaced with a light "paper" theme (greyscale + red accent) per the student's own direction and the tutor's "graphically rigorous, not AI slop" guidance. All theme tokens are plain hex values in `index.css`, which also made the html2canvas export safe without extra conversion work.
+
+### ADR-08: Sample Drawing — SVG overlay, not canvas redraw
+The streetscape SVG is hand-categorised with `data-cat` attributes per element group. Fills are applied via a separately inserted `<g data-role="glass-overlay">` as the first SVG child (so it renders behind all linework), while people elements receive a white fill with a cloned stroke-only group appended last (so linework always renders on top). This avoids touching the source artwork's fill attributes and means the drawing degrades cleanly to pure linework (style 0) with no DOM state to undo.
 
 ---
 
@@ -258,9 +276,11 @@ src/
 ├── store/
 │   ├── appStore.tsx                 # Context + useReducer + localStorage sync (try/catch)
 │   ├── actions.ts                   # typed action creators, incl. resetProject/resetAll
-│   └── seedData.ts                  # 47 real precedents sourced from Divisare
+│   └── seedData.ts                  # 70 real precedents sourced from Divisare
 ├── data/
 │   └── tagVocabulary.ts
+├── assets/
+│   └── streetscape-elevation.svg    # hand-categorised with data-cat attributes
 ├── components/
 │   ├── graph/
 │   │   ├── Graph.tsx                # SVG container, D3 simulation lifecycle, project pin
@@ -268,7 +288,9 @@ src/
 │   │   └── EdgeLayer.tsx            # weight-scaled opacity
 │   ├── precedent/
 │   │   ├── PrecedentCard.tsx
-│   │   └── PrecedentForm.tsx        # Wikipedia lookup, colour + material texture upload
+│   │   └── PrecedentForm.tsx        # Wikipedia lookup, colour count selector, colour + material texture upload
+│   ├── drawing/
+│   │   └── DrawingRecolour.tsx      # live SVG recolouring, 4 fill styles, PNG download
 │   ├── sidebar/
 │   │   ├── ProjectPanel.tsx         # singleton project editor + Suggest-tags + Analyse trigger
 │   │   └── TagInput.tsx
@@ -288,6 +310,7 @@ src/
     ├── tagUtils.ts                  # slugify, normalise, suggestTagsFromText, TAG_TRIGGERS
     ├── materialUtils.ts             # getMaterialTags
     ├── colourUtils.ts               # canvas extraction, proxy fallback, file fallback
+    ├── svgRecolour.ts               # assignCategoryColours for the sample drawing
     ├── wikipediaUtils.ts
     └── analyseInfluences.ts         # offline-first, optional Claude
 ```
@@ -296,7 +319,9 @@ src/
 
 ## 13. Precedent Library
 
-47 real precedents (not placeholder seed data), sourced from a student-curated list of Divisare links — name, architect, year, location, and image for each. Colour palettes (7 swatches each) were extracted programmatically from the real images, with an automatic CORS-proxy fallback where the direct read was blocked. Material tags were added by visually inspecting every image; 24 of 47 carry at least one evidence-based material tag.
+70 real precedents (not placeholder seed data), sourced from a student-curated list of Divisare links — name, architect, year, location, and image for each. Colour palettes (up to 7 swatches each) were extracted programmatically from the real images, with an automatic CORS-proxy fallback where the direct read was blocked. Material tags were added by visually inspecting every image; tags were only applied where a material was clearly evidenced in the photo.
+
+The library covers a deliberately broad tag spread across all six vocabulary categories (Natural Elements, Material, Spatial Quality, Programme, Concept, Atmosphere), with particular depth in: domestic, civic, institutional, cultural, memorial, agricultural, hospitality, adaptive-reuse, vernacular, rammed-earth, stone, timber, concrete, terracotta, landscape, water, light, shadow, threshold, procession, stillness, and playfulness.
 
 ---
 
@@ -310,6 +335,7 @@ src/
 | Tags consistent | Slugified on save; controlled vocabulary by default, free text as fallback |
 | Storage failures don't crash the app | `localStorage.setItem` wrapped in try/catch |
 | API key never required, never hardcoded | `.env`-only, optional, dual-mode fallback always present |
+| Library always up to date | Seed merge on load — new precedents added to `seedData.ts` appear automatically for returning visitors |
 
 ---
 
@@ -323,5 +349,6 @@ src/
 | Tag connections / graph edges | Rule-based shared-tag function | Precision matters; shared tags are facts, not interpretations |
 | Concept-tag suggestions | Deterministic keyword/synonym matching | Transparent and free; good enough for a controlled vocabulary |
 | Ranking precedents against a concept | Offline tag-overlap by default; optional Claude for richer reasoning | Most of the value is structural (shared tags); language-level nuance is where Claude genuinely adds something a rule can't |
+| Sample drawing recolouring | Deterministic palette assignment per SVG category | Measuring real extracted colours and applying them to real linework produces a more honest output than generating or guessing |
 
 This split is the actual evidence for the critical-reflection criterion: AI was deliberately kept optional and was added only where rule-based logic clearly couldn't do the job — not because Claude was available, but because everywhere else, a transparent, free, deterministic approach was the stronger design choice.
