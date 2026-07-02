@@ -43,33 +43,63 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
   const [downloading, setDownloading] = useState(false);
 
   const handleDownload = async () => {
-    if (!cardRef.current) return;
+    const svgEl = containerRef.current?.querySelector("svg");
+    if (!svgEl) return;
     setDownloading(true);
     try {
-      // Serialize the current SVG state (including all JS-applied inline styles and
-      // the overlay/linework groups) so html2canvas gets the recoloured version,
-      // not the original uncoloured artwork.
-      const svgEl = containerRef.current?.querySelector("svg");
-      const svgDataUrl = svgEl
-        ? "data:image/svg+xml;charset=utf-8," +
-          encodeURIComponent(new XMLSerializer().serializeToString(svgEl))
-        : null;
+      const SCALE = 2;
+      const PAD = 20;
+      const SWATCH = 32;
+      const GAP = 6;
 
-      const { default: html2canvas } = await import("html2canvas");
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: "#ffffff",
-        scale: 2,
-        onclone: (_doc, el) => {
-          if (!svgDataUrl) return;
-          const container = el.querySelector<HTMLElement>("[data-drawing]");
-          if (!container) return;
-          const img = document.createElement("img");
-          img.src = svgDataUrl;
-          img.style.cssText = "display:block;width:100%;height:auto;";
-          container.innerHTML = "";
-          container.appendChild(img);
-        },
+      // Serialize the live SVG DOM — all JS-applied strokes, fills, overlay
+      // groups and the people-linework clone are captured at this moment.
+      const svgDataUrl =
+        "data:image/svg+xml;charset=utf-8," +
+        encodeURIComponent(new XMLSerializer().serializeToString(svgEl));
+
+      // Pre-load as an Image so drawImage below has no timing race.
+      const svgImg = await new Promise<HTMLImageElement>((resolve, reject) => {
+        const img = new Image();
+        img.onload = () => resolve(img);
+        img.onerror = reject;
+        img.src = svgDataUrl;
       });
+
+      // Work out canvas dimensions from the card's current size.
+      const cardW = cardRef.current?.offsetWidth ?? 678;
+      const perRow = Math.max(1, Math.floor((cardW - PAD * 2) / (SWATCH + GAP)));
+      const swatchRows = Math.ceil(activePalette.length / perRow);
+      const swatchBlockH = swatchRows * SWATCH + Math.max(0, swatchRows - 1) * GAP;
+
+      const vb = svgEl.getAttribute("viewBox")?.split(" ").map(Number);
+      const aspect = vb && vb[2] && vb[3] ? vb[2] / vb[3] : 16 / 9;
+      const svgW = cardW - PAD * 2;
+      const svgH = svgW / aspect;
+
+      const totalH = PAD + swatchBlockH + PAD + svgH + PAD;
+
+      const canvas = document.createElement("canvas");
+      canvas.width = cardW * SCALE;
+      canvas.height = totalH * SCALE;
+      const ctx = canvas.getContext("2d")!;
+      ctx.scale(SCALE, SCALE);
+
+      // White card background.
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, cardW, totalH);
+
+      // Palette swatches row(s).
+      activePalette.forEach((s, i) => {
+        const col = i % perRow;
+        const row = Math.floor(i / perRow);
+        ctx.fillStyle = s.hex;
+        ctx.fillRect(PAD + col * (SWATCH + GAP), PAD + row * (SWATCH + GAP), SWATCH, SWATCH);
+      });
+
+      // Recoloured SVG drawing.
+      ctx.drawImage(svgImg, PAD, PAD + swatchBlockH + PAD, svgW, svgH);
+
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
       if (!blob) return;
       const url = URL.createObjectURL(blob);
