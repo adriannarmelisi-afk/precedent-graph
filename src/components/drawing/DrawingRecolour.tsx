@@ -46,8 +46,30 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
     if (!cardRef.current) return;
     setDownloading(true);
     try {
+      // Serialize the current SVG state (including all JS-applied inline styles and
+      // the overlay/linework groups) so html2canvas gets the recoloured version,
+      // not the original uncoloured artwork.
+      const svgEl = containerRef.current?.querySelector("svg");
+      const svgDataUrl = svgEl
+        ? "data:image/svg+xml;charset=utf-8," +
+          encodeURIComponent(new XMLSerializer().serializeToString(svgEl))
+        : null;
+
       const { default: html2canvas } = await import("html2canvas");
-      const canvas = await html2canvas(cardRef.current, { backgroundColor: "#ffffff", scale: 2 });
+      const canvas = await html2canvas(cardRef.current, {
+        backgroundColor: "#ffffff",
+        scale: 2,
+        onclone: (_doc, el) => {
+          if (!svgDataUrl) return;
+          const container = el.querySelector<HTMLElement>("[data-drawing]");
+          if (!container) return;
+          const img = document.createElement("img");
+          img.src = svgDataUrl;
+          img.style.cssText = "display:block;width:100%;height:auto;";
+          container.innerHTML = "";
+          container.appendChild(img);
+        },
+      });
       const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, "image/png"));
       if (!blob) return;
       const url = URL.createObjectURL(blob);
@@ -230,6 +252,7 @@ export function DrawingRecolour({ palette, chosenSwatches }: DrawingRecolourProp
           </div>
           <div
             ref={containerRef}
+            data-drawing
             className="[&_svg]:block [&_svg]:h-auto [&_svg]:w-full"
             dangerouslySetInnerHTML={{ __html: elevationSvg }}
           />
