@@ -109,9 +109,13 @@ function AppShell() {
   };
 
   const [searchQuery, setSearchQuery] = useState("");
+  const [showInfluencesOnly, setShowInfluencesOnly] = useState(false);
 
   const visiblePrecedents = useMemo(() => {
     let list = precedents;
+    if (showInfluencesOnly) {
+      list = list.filter((p) => p.isInfluence);
+    }
     if (ui.activeTagFilters.length > 0) {
       list = list.filter((p) => p.tags.some((t) => ui.activeTagFilters.includes(t)));
     }
@@ -125,7 +129,7 @@ function AppShell() {
       );
     }
     return list;
-  }, [precedents, ui.activeTagFilters, searchQuery]);
+  }, [precedents, ui.activeTagFilters, searchQuery, showInfluencesOnly]);
 
   const influences = useMemo(() => precedents.filter((p) => p.isInfluence), [precedents]);
 
@@ -292,6 +296,17 @@ function AppShell() {
                   placeholder="Search name, architect, or tag…"
                   className="w-full max-w-xs rounded-md border border-hairline bg-surface-1 px-2.5 py-1.5 text-[12px] text-ink outline-none placeholder:text-ink-tertiary focus:border-primary"
                 />
+                <button
+                  type="button"
+                  onClick={() => setShowInfluencesOnly((v) => !v)}
+                  className={`shrink-0 rounded-full border px-3 py-1 text-[11px] font-medium transition-colors ${
+                    showInfluencesOnly
+                      ? "border-primary bg-primary text-on-primary"
+                      : "border-hairline-strong text-ink-subtle hover:border-primary hover:text-primary"
+                  }`}
+                >
+                  ♦ Influences{influenceCount > 0 ? ` ${influenceCount}` : ""}
+                </button>
                 <button
                   type="button"
                   onClick={() => setForm({ mode: "add" })}
